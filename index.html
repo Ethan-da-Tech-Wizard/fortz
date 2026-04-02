@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fort Builder Game!</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Title Screen -->
+        <div id="title-screen" class="screen active">
+            <h1>Fort Builder!</h1>
+            <p class="subtitle">Build your dream fort and play inside!</p>
+            <button class="big-button" onclick="startGame()">Let's Build!</button>
+        </div>
+
+        <!-- Step 1: Build Your Fort -->
+        <div id="build-screen" class="screen">
+            <h2>Build Your Fort!</h2>
+            <p>Drag blankets and pillows onto the fort area to build!</p>
+            <div id="build-materials">
+                <div class="material" draggable="true" data-type="blanket-red" data-emoji="🔴">🟥 Red Blanket</div>
+                <div class="material" draggable="true" data-type="blanket-blue" data-emoji="🔵">🟦 Blue Blanket</div>
+                <div class="material" draggable="true" data-type="blanket-purple" data-emoji="🟣">🟪 Purple Blanket</div>
+                <div class="material" draggable="true" data-type="blanket-green" data-emoji="🟢">🟩 Green Blanket</div>
+                <div class="material" draggable="true" data-type="blanket-yellow" data-emoji="🟡">🟨 Yellow Blanket</div>
+                <div class="material" draggable="true" data-type="blanket-rainbow" data-emoji="🌈">🌈 Rainbow Blanket</div>
+                <div class="material" draggable="true" data-type="pillow-white" data-emoji="⬜">⬜ White Pillow</div>
+                <div class="material" draggable="true" data-type="pillow-pink" data-emoji="🩷">🩷 Pink Pillow</div>
+                <div class="material" draggable="true" data-type="pillow-star" data-emoji="⭐">⭐ Star Pillow</div>
+                <div class="material" draggable="true" data-type="pillow-heart" data-emoji="❤️">❤️ Heart Pillow</div>
+                <div class="material" draggable="true" data-type="pillow-moon" data-emoji="🌙">🌙 Moon Pillow</div>
+                <div class="material" draggable="true" data-type="fairy-lights" data-emoji="✨">✨ Fairy Lights</div>
+            </div>
+            <div id="fort-area">
+                <p id="fort-hint">Drop items here to build your fort!</p>
+                <div id="fort-items"></div>
+            </div>
+            <button class="big-button" onclick="goToToys()">Pick Toys! →</button>
+        </div>
+
+        <!-- Step 2: Pick Your Toys -->
+        <div id="toys-screen" class="screen">
+            <h2>Pick Your Toys!</h2>
+            <p>Choose the toys you want in your fort!</p>
+            <div id="toy-grid"></div>
+            <div id="selected-toys">
+                <h3>Your Toys: <span id="toy-count">0</span></h3>
+                <div id="toy-basket"></div>
+            </div>
+            <button class="big-button" onclick="goToCharacter()">Make Your Person! →</button>
+        </div>
+
+        <!-- Step 3: Make Your Person -->
+        <div id="character-screen" class="screen">
+            <h2>Make Your Person!</h2>
+            <div id="character-creator">
+                <div id="character-preview">
+                    <div id="char-hair">👱</div>
+                    <div id="char-face">😊</div>
+                    <div id="char-outfit">👕</div>
+                    <div id="char-shoes">👟</div>
+                </div>
+                <div id="character-options">
+                    <div class="option-group">
+                        <h3>Hair</h3>
+                        <div class="option-row" id="hair-options"></div>
+                    </div>
+                    <div class="option-group">
+                        <h3>Face</h3>
+                        <div class="option-row" id="face-options"></div>
+                    </div>
+                    <div class="option-group">
+                        <h3>Outfit</h3>
+                        <div class="option-row" id="outfit-options"></div>
+                    </div>
+                    <div class="option-group">
+                        <h3>Shoes</h3>
+                        <div class="option-row" id="shoes-options"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="name-input">
+                <label>Name your person: </label>
+                <input type="text" id="char-name" placeholder="Type a name..." maxlength="20">
+            </div>
+            <button class="big-button" onclick="goToPlay()">Go Play! →</button>
+        </div>
+
+        <!-- Step 4: Play in the Fort -->
+        <div id="play-screen" class="screen">
+            <h2 id="fort-title">Your Fort!</h2>
+            <div id="play-area">
+                <div id="fort-scene">
+                    <div id="fort-roof"></div>
+                    <div id="fort-inside">
+                        <div id="player-character"></div>
+                        <div id="placed-toys"></div>
+                    </div>
+                </div>
+                <div id="play-controls">
+                    <button class="play-btn" onclick="moveCharacter('left')">⬅️</button>
+                    <button class="play-btn" onclick="moveCharacter('up')">⬆️</button>
+                    <button class="play-btn" onclick="moveCharacter('down')">⬇️</button>
+                    <button class="play-btn" onclick="moveCharacter('right')">➡️</button>
+                </div>
+                <div id="play-actions">
+                    <button class="action-btn" onclick="doAction('wave')">👋 Wave</button>
+                    <button class="action-btn" onclick="doAction('dance')">💃 Dance</button>
+                    <button class="action-btn" onclick="doAction('jump')">🦘 Jump</button>
+                    <button class="action-btn" onclick="doAction('sleep')">😴 Sleep</button>
+                </div>
+            </div>
+            <button class="tablet-btn" onclick="openTablet()">📱 Open Tablet</button>
+            <button class="small-button" onclick="goToTitle()">🏠 Home</button>
+        </div>
+
+        <!-- Tablet Screen -->
+        <div id="tablet-screen" class="screen">
+            <div id="tablet-frame">
+                <div id="tablet-header">
+                    <h2>📱 My Tablet</h2>
+                    <button class="close-btn" onclick="closeTablet()">✕</button>
+                </div>
+                <div id="tablet-content">
+                    <div id="app-grid">
+                        <div class="app-icon" onclick="playTabletGame('math')">
+                            <span class="app-emoji">🔢</span>
+                            <span class="app-name">Math Fun</span>
+                        </div>
+                        <div class="app-icon" onclick="playTabletGame('spelling')">
+                            <span class="app-emoji">📝</span>
+                            <span class="app-name">Spelling</span>
+                        </div>
+                        <div class="app-icon" onclick="playTabletGame('colors')">
+                            <span class="app-emoji">🎨</span>
+                            <span class="app-name">Colors</span>
+                        </div>
+                        <div class="app-icon" onclick="playTabletGame('counting')">
+                            <span class="app-emoji">🔟</span>
+                            <span class="app-name">Counting</span>
+                        </div>
+                        <div class="app-icon" onclick="playTabletGame('shapes')">
+                            <span class="app-emoji">🔷</span>
+                            <span class="app-name">Shapes</span>
+                        </div>
+                        <div class="app-icon" onclick="playTabletGame('animals')">
+                            <span class="app-emoji">🐾</span>
+                            <span class="app-name">Animals</span>
+                        </div>
+                        <div class="app-icon" onclick="playTabletGame('music')">
+                            <span class="app-emoji">🎵</span>
+                            <span class="app-name">Music</span>
+                        </div>
+                        <div class="app-icon" onclick="playTabletGame('drawing')">
+                            <span class="app-emoji">✏️</span>
+                            <span class="app-name">Drawing</span>
+                        </div>
+                    </div>
+                    <!-- Tablet game area -->
+                    <div id="tablet-game" class="hidden">
+                        <button class="back-btn" onclick="backToApps()">← Back</button>
+                        <div id="game-area"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action popup -->
+        <div id="action-popup" class="hidden"></div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
