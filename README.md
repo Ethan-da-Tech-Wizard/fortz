@@ -1,43 +1,28 @@
-<h1 align="center">Fort Builder</h1>
-<p align="center"><b>Build your dream blanket fort and play inside it. A tiny, kid-friendly drag-and-drop browser game.</b></p>
-<p align="center">
-<img alt="HTML5" src="https://img.shields.io/badge/HTML5-game-e34f26">
-<img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-vanilla-f7df1e">
-<img alt="License" src="https://img.shields.io/badge/license-MIT-blue">
-</p>
+# Fort Builder
 
-<p align="center">
-<img src="docs/fortz-title.png" alt="Fort Builder title screen" width="48%">
-<img src="docs/fortz-builder.png" alt="Fort Builder: drag blankets, pillows and fairy lights onto the fort area" width="48%">
-</p>
+A drag-and-drop browser playground for building forts from blankets, pillows, furniture, and lights.
 
-Fort Builder is a playful drag-and-drop game. Drag colorful blankets and pillows onto the fort area to construct your very own fort, pick your toys, then play inside.
+**Status:** Browser-game prototype  
+**Built with:** HTML, CSS, JavaScript
 
-## Features
+[Project guide](docs/PROJECT_GUIDE.md) · [Every file explained](docs/FILE_GUIDE.md) · [Licenses and dependencies](docs/LICENSE_REVIEW.md)
 
-- **Blankets:** red, blue, purple, green, yellow and rainbow.
-- **Pillows:** white, pink, star, heart and moon.
-- **Extras:** fairy lights.
-- **Multi-step play:** build the fort, then choose toys to bring inside.
-- **No install:** plain HTML, CSS and JavaScript. Open `index.html` and play.
+## Start here
 
-## Play
+- [index.html](index.html) — Browser document: Fort Builder Game!; provides page structure and may include inline styles or application logic.
 
-```sh
-git clone https://github.com/Ethan-da-Tech-Wizard/fortz.git
-cd fortz
-open index.html   # or double-click it
-```
+[Detailed setup, usage, and development notes](PROJECT_NOTES.md) preserve the previous project documentation.
 
-## Project layout
+## Repository layout
 
-| Path | Purpose |
-|---|---|
-| `index.html` | Game page |
-| `style.css` | Styling |
-| `game.js` | Drag-and-drop game logic |
-| `docs/` | Screenshots |
+| Path | Role |
+| --- | --- |
+| [docs/](docs/) | Project documentation, decisions, and reference material (7 tracked entries). |
+
+## Scope and current limits
+
+Built as a static browser project; no application server is included.
 
 ## License
 
-Released under the [MIT License](LICENSE).
+Original project code retains **MIT** terms in [LICENSE](LICENSE). Third-party libraries, media, data, models, and tools retain their own terms. See the [license review](docs/LICENSE_REVIEW.md) and [dependency inventory](docs/DEPENDENCIES.csv).
