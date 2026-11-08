@@ -1,19 +1,30 @@
-// ==================== GAME STATE ====================
+/**
+ * Program: Fort Builder Game Engine
+ * Programmer: Ethan Kilmer
+ * Last Modified: 11/08/2026
+ * Purpose: Interactive browser game for building personalized blanket forts, selecting
+ *          custom toy loadouts, customizing player characters, and engaging in 8 embedded
+ *          educational mini-games (Math, Spelling, Colors, Counting, Shapes, Animals, Music, Drawing).
+ */
+
+// ==================== CORE GAME STATE ====================
+// Tracks fort structure elements, selected toy inventory, avatar customization, and 2D spatial positioning
 const gameState = {
-    fortItems: [],
-    selectedToys: [],
-    character: {
+    fortItems: [],      // Array of placed blankets, pillows, and decorative lights
+    selectedToys: [],   // Array of active toys selected from the toy box to bring into the fort
+    character: {        // Avatar customization properties (hair style, facial expression, shirt, shoes, name)
         hair: '👱',
         face: '😊',
         outfit: '👕',
         shoes: '👟',
         name: ''
     },
-    charX: 50,
-    charY: 50
+    charX: 50,          // Current avatar X coordinate inside the fort room (percentage based)
+    charY: 50           // Current avatar Y coordinate inside the fort room (percentage based)
 };
 
-// ==================== TOY DATA ====================
+// ==================== COMPREHENSIVE TOY CATALOG ====================
+// Exhaustive list of 40 interactive toys with emojis and descriptive titles
 const allToys = [
     { emoji: '🧱', name: 'Legos' },
     { emoji: '⚽', name: 'Soccer Ball' },
