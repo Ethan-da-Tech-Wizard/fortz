@@ -1,3 +1,11 @@
+/**
+ * Program: Fort Builder Styling Engine
+ * Programmer: Ethan Kilmer
+ * Last Modified: 11/08/2026
+ * Purpose: Visual presentation and responsive layout for Fort Builder screens,
+ *          drag-and-drop materials, avatar customization, and tablet modal apps.
+ */
+
 * {
     margin: 0;
     padding: 0;
