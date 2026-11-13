@@ -51,19 +51,19 @@ start index.html      # Windows
 
 ## 🧪 Automated Verification & Testing
 
-Fort Builder includes a regression test suite validating state models, DOM containers, and educational games:
+Fort Builder includes static source checks for selected handlers, markup, styles, and inventory entries. These checks do not exercise browser interaction or establish game behavior:
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
 
-All 6 automated test cases pass with zero dependencies:
-- `test_ethan_kilmer_header`: Validates authorship and metadata integrity.
-- `test_toy_inventory_completeness`: Confirms 40-item catalog integrity.
-- `test_educational_minigames_present`: Verifies all 8 educational tablet game handlers.
-- `test_screen_navigation_routes`: Tests state transitions across all 5 game scenes.
-- `test_dom_structure`: Confirms structural integrity of containers and modals.
-- `test_stylesheet_rules`: Validates styling selectors.
+The six test methods check for selected source elements. Their current result has not been verified in this review:
+- `test_ethan_kilmer_header`: Checks for metadata strings; this is not independent authorship verification.
+- `test_toy_inventory_completeness`: Checks selected names and a minimum number of entries; it does not exercise each toy.
+- `test_educational_minigames_present`: Checks that eight handler names appear in source.
+- `test_screen_navigation_routes`: Checks for navigation function names; it does not execute transitions.
+- `test_dom_structure`: Checks for selected element IDs; it does not validate the full DOM.
+- `test_stylesheet_rules`: Checks for selected styling strings.
 
 ---
 
