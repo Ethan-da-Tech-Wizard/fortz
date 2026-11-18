@@ -1,31 +1,36 @@
+<!-- ==============================================================================
+// Program: index.html
+// Programmer: Ethan-da-Tech-Wizard
+// Last Modified: November 18, 2026
+// Purpose: Responsive single-page web interface for constructing blanket forts,
+//          managing toy collections, customizing avatar appearance, rendering
+//          interactive play scenes, and presenting 8 educational tablet mini-games.
+// ============================================================================== -->
 <!DOCTYPE html>
-<!--
-  Program: Fort Builder
-  Programmer: Ethan Kilmer
-  Last Modified: 11/08/2026
-  Purpose: Responsive browser interface for constructing blanket forts, managing toy collections,
-           and playing embedded educational tablet games.
--->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Viewport configuration for responsive mobile and desktop scaling -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fort Builder Game!</title>
+    <!-- Core game presentation stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Primary outer application container -->
     <div id="game-container">
-        <!-- Title Screen -->
+        <!-- View 0: Title and Welcome Screen -->
         <div id="title-screen" class="screen active">
             <h1>Fort Builder!</h1>
             <p class="subtitle">Build your dream fort and play inside!</p>
             <button class="big-button" onclick="startGame()">Let's Build!</button>
         </div>
 
-        <!-- Step 1: Build Your Fort -->
+        <!-- Step 1: Fort Construction Screen (Drag-and-Drop Area) -->
         <div id="build-screen" class="screen">
             <h2>Build Your Fort!</h2>
             <p>Drag blankets and pillows onto the fort area to build!</p>
+            <!-- Palette of draggable building materials with metadata attributes -->
             <div id="build-materials">
                 <div class="material" draggable="true" data-type="blanket-red" data-emoji="🔴">🟥 Red Blanket</div>
                 <div class="material" draggable="true" data-type="blanket-blue" data-emoji="🔵">🟦 Blue Blanket</div>
@@ -40,6 +45,7 @@
                 <div class="material" draggable="true" data-type="pillow-moon" data-emoji="🌙">🌙 Moon Pillow</div>
                 <div class="material" draggable="true" data-type="fairy-lights" data-emoji="✨">✨ Fairy Lights</div>
             </div>
+            <!-- Target drop zone for placing blanket fort architectural components -->
             <div id="fort-area">
                 <p id="fort-hint">Drop items here to build your fort!</p>
                 <div id="fort-items"></div>
@@ -47,11 +53,13 @@
             <button class="big-button" onclick="goToToys()">Pick Toys! →</button>
         </div>
 
-        <!-- Step 2: Pick Your Toys -->
+        <!-- Step 2: Toy Catalog & Basket Selection Screen -->
         <div id="toys-screen" class="screen">
             <h2>Pick Your Toys!</h2>
             <p>Choose the toys you want in your fort!</p>
+            <!-- Dynamically populated 40+ item toy selection grid -->
             <div id="toy-grid"></div>
+            <!-- Selected inventory basket displaying count and emojis -->
             <div id="selected-toys">
                 <h3>Your Toys: <span id="toy-count">0</span></h3>
                 <div id="toy-basket"></div>
@@ -59,16 +67,18 @@
             <button class="big-button" onclick="goToCharacter()">Make Your Person! →</button>
         </div>
 
-        <!-- Step 3: Make Your Person -->
+        <!-- Step 3: Avatar Character Customization Screen -->
         <div id="character-screen" class="screen">
             <h2>Make Your Person!</h2>
             <div id="character-creator">
+                <!-- Real-time avatar preview composite -->
                 <div id="character-preview">
                     <div id="char-hair">👱</div>
                     <div id="char-face">😊</div>
                     <div id="char-outfit">👕</div>
                     <div id="char-shoes">👟</div>
                 </div>
+                <!-- Selection options categorized by hair, face, outfit, and shoes -->
                 <div id="character-options">
                     <div class="option-group">
                         <h3>Hair</h3>
@@ -95,10 +105,11 @@
             <button class="big-button" onclick="goToPlay()">Go Play! →</button>
         </div>
 
-        <!-- Step 4: Play in the Fort -->
+        <!-- Step 4: Interactive In-Fort Play Mode & Simulation Scene -->
         <div id="play-screen" class="screen">
             <h2 id="fort-title">Your Fort!</h2>
             <div id="play-area">
+                <!-- Fort internal scene container with rendered roof and placed toys -->
                 <div id="fort-scene">
                     <div id="fort-roof"></div>
                     <div id="fort-inside">
@@ -106,12 +117,14 @@
                         <div id="placed-toys"></div>
                     </div>
                 </div>
+                <!-- Spatial movement directional controls for 2D position updates -->
                 <div id="play-controls">
                     <button class="play-btn" onclick="moveCharacter('left')">⬅️</button>
                     <button class="play-btn" onclick="moveCharacter('up')">⬆️</button>
                     <button class="play-btn" onclick="moveCharacter('down')">⬇️</button>
                     <button class="play-btn" onclick="moveCharacter('right')">➡️</button>
                 </div>
+                <!-- Animation triggers: wave, dance, jump, and sleep -->
                 <div id="play-actions">
                     <button class="action-btn" onclick="doAction('wave')">👋 Wave</button>
                     <button class="action-btn" onclick="doAction('dance')">💃 Dance</button>
@@ -123,7 +136,7 @@
             <button class="small-button" onclick="goToTitle()">🏠 Home</button>
         </div>
 
-        <!-- Tablet Screen -->
+        <!-- Educational Tablet Modal & Mini-Game Runner -->
         <div id="tablet-screen" class="screen">
             <div id="tablet-frame">
                 <div id="tablet-header">
@@ -131,6 +144,7 @@
                     <button class="close-btn" onclick="closeTablet()">✕</button>
                 </div>
                 <div id="tablet-content">
+                    <!-- Tablet Home: 8 educational launcher icons -->
                     <div id="app-grid">
                         <div class="app-icon" onclick="playTabletGame('math')">
                             <span class="app-emoji">🔢</span>
@@ -165,7 +179,7 @@
                             <span class="app-name">Drawing</span>
                         </div>
                     </div>
-                    <!-- Tablet game area -->
+                    <!-- Tablet Active Game Area (includes HTML5 Canvas for drawing) -->
                     <div id="tablet-game" class="hidden">
                         <button class="back-btn" onclick="backToApps()">← Back</button>
                         <div id="game-area"></div>
@@ -174,10 +188,11 @@
             </div>
         </div>
 
-        <!-- Action popup -->
+        <!-- Action feedback popup indicator -->
         <div id="action-popup" class="hidden"></div>
     </div>
 
+    <!-- Main game logic and physics script -->
     <script src="game.js"></script>
 </body>
 </html>

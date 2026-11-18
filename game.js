@@ -1,11 +1,13 @@
-/**
- * Program: Fort Builder Game Engine
- * Programmer: Ethan Kilmer
- * Last Modified: 11/08/2026
- * Purpose: Interactive browser game for building personalized blanket forts, selecting
- *          custom toy loadouts, customizing player characters, and engaging in 8 embedded
- *          educational mini-games (Math, Spelling, Colors, Counting, Shapes, Animals, Music, Drawing).
- */
+// ==============================================================================
+// Program: game.js
+// Program: Fort Builder
+// Programmer: Ethan-da-Tech-Wizard
+// Programmer: Ethan Kilmer
+// Last Modified: November 18, 2026
+// Purpose: Interactive browser game for building personalized blanket forts, selecting
+//          custom toy loadouts, customizing player characters, and engaging in 8 embedded
+//          educational mini-games (Math, Spelling, Colors, Counting, Shapes, Animals, Music, Drawing).
+// ==============================================================================
 
 // ==================== CORE GAME STATE ====================
 // Tracks fort structure elements, selected toy inventory, avatar customization, and 2D spatial positioning
@@ -286,19 +288,25 @@ function renderPlayScene() {
     ).join('');
 }
 
+// Game Simulation Physics: 2D bounded position updates
 function moveCharacter(direction) {
+    // Step 1: Discrete position displacement quantum (8% viewport step)
     const step = 8;
+    // Step 2: Directional vector calculation with bounding box clamping
+    // Restricts avatar to interior fort margins [10%, 90%] on X-axis, [15%, 85%] on Y-axis
     switch(direction) {
         case 'left': gameState.charX = Math.max(10, gameState.charX - step); break;
         case 'right': gameState.charX = Math.min(90, gameState.charX + step); break;
         case 'up': gameState.charY = Math.max(15, gameState.charY - step); break;
         case 'down': gameState.charY = Math.min(85, gameState.charY + step); break;
     }
+    // Step 3: Apply physical coordinates to CSS layout positioning
     const player = document.getElementById('player-character');
     player.style.left = gameState.charX + '%';
     player.style.top = gameState.charY + '%';
 }
 
+// Avatar Kinematics and Action Animations
 function doAction(action) {
     const emojis = {
         wave: '👋',
@@ -308,6 +316,7 @@ function doAction(action) {
     };
     showPopup(emojis[action] || '✨');
 
+    // Kinematic oscillation simulation (alternating rotation & scale)
     if (action === 'dance') {
         const player = document.getElementById('player-character');
         player.style.transition = 'transform 0.2s';
@@ -324,6 +333,7 @@ function doAction(action) {
         }, 200);
     }
 
+    // Vertical impulse simulation: parabolic leap displacement with return
     if (action === 'jump') {
         const player = document.getElementById('player-character');
         player.style.transition = 'transform 0.3s ease';
@@ -701,8 +711,9 @@ function startMusicGame(area) {
     };
 }
 
-// --- Drawing Game ---
+// --- Drawing Game: HTML5 2D Canvas Rasterization and Vector Rendering ---
 function startDrawingGame(area) {
+    // Step 1: Color palette selection for brush rasterization
     const colors = ['#000000', '#ff4444', '#ff8800', '#ffcc00', '#44aa44', '#4444ff', '#aa44ff', '#ff44aa', '#ffffff'];
     let currentColor = '#000000';
 
@@ -717,16 +728,21 @@ function startDrawingGame(area) {
         <button class="game-choice" onclick="clearCanvas()" style="margin-top:10px">🗑️ Clear</button>
     `;
 
+    // Step 2: Initialize HTML5 Canvas 2D Rendering Context
     const canvas = document.getElementById('draw-canvas');
     const ctx = canvas.getContext('2d');
+    // Clear canvas background to opaque white fill
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Configure stroke rasterizer properties: line width, round cap joints, and color
     ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.strokeStyle = currentColor;
 
     let drawing = false;
 
+    // Step 3: Spatial coordinate transformation pipeline
+    // Transforms viewport client space coordinates to internal canvas resolution coordinates
     function getPos(e) {
         const rect = canvas.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -737,15 +753,39 @@ function startDrawingGame(area) {
         };
     }
 
-    canvas.addEventListener('mousedown', (e) => { drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
-    canvas.addEventListener('mousemove', (e) => { if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
+    // Step 4: Mouse & Touch Vector Path Event Listeners
+    canvas.addEventListener('mousedown', (e) => {
+        drawing = true;
+        const p = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+    });
+    canvas.addEventListener('mousemove', (e) => {
+        if (!drawing) return;
+        const p = getPos(e);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+    });
     canvas.addEventListener('mouseup', () => drawing = false);
     canvas.addEventListener('mouseleave', () => drawing = false);
 
-    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
-    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        drawing = true;
+        const p = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+    });
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!drawing) return;
+        const p = getPos(e);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+    });
     canvas.addEventListener('touchend', () => drawing = false);
 
+    // Step 5: Palette Selection and Canvas Reset Procedures
     window.setDrawColor = function(color, dot) {
         currentColor = color;
         ctx.strokeStyle = color;

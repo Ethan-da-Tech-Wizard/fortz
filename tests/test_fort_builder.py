@@ -1,40 +1,46 @@
-"""
-Program: Fort Builder Test Suite
-Programmer: Ethan Kilmer
-Last Modified: 11/08/2026
-Purpose: Automated verification test suite for the Fort Builder game engine,
-         validating toy inventories, mini-game handlers, HTML DOM structure,
-         and CSS styling rules without browser dependencies.
-"""
+# ==============================================================================
+# Program: test_fort_builder.py
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Automated verification test suite for the Fort Builder game engine,
+#          validating toy inventories, educational mini-game handlers, HTML DOM
+#          structure, and CSS styling rules without browser dependencies.
+# ==============================================================================
 
 import unittest
 import re
 from pathlib import Path
 
+# Resolve repository root directory to access front-end assets directly
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 class TestFortBuilderEngine(unittest.TestCase):
-    """Automated unit tests validating Fort Builder's game state and logic."""
+    """Automated unit tests validating Fort Builder's game state, DOM, and logic."""
 
     def setUp(self):
+        # Step 1: Ingest source assets (JavaScript engine, HTML markup, and CSS stylesheets)
         self.game_js = (REPO_ROOT / "game.js").read_text(encoding="utf-8")
         self.index_html = (REPO_ROOT / "index.html").read_text(encoding="utf-8")
         self.style_css = (REPO_ROOT / "style.css").read_text(encoding="utf-8")
 
     def test_ethan_kilmer_header(self):
         """Verify Ethan Kilmer authorship and program metadata in game.js."""
+        # Step 2: Validate that standard school program metadata headers are preserved
         self.assertIn("Programmer: Ethan Kilmer", self.game_js)
         self.assertIn("Program: Fort Builder", self.game_js)
 
     def test_toy_inventory_completeness(self):
         """Ensure all 40+ toys are properly defined with emoji and name."""
+        # Step 3: Extract the allToys array definition from source using regular expressions
         match = re.search(r"const allToys = \[(.*?)\];", self.game_js, re.DOTALL)
         self.assertIsNotNone(match, "allToys array must be defined in game.js")
+        
+        # Step 4: Parse individual toy objects containing emoji icons and descriptive names
         toy_entries = re.findall(r"\{\s*emoji:\s*'([^']+)',\s*name:\s*'([^']+)'\s*\}", match.group(1))
         self.assertGreaterEqual(len(toy_entries), 35, "Expected at least 35 unique toys in the inventory")
         
-        # Verify specific classic toys exist
+        # Step 5: Verify specific classic toy fixtures are available in the catalog
         names = [name for _, name in toy_entries]
         self.assertIn("Legos", names)
         self.assertIn("Teddy Bear", names)
@@ -43,6 +49,7 @@ class TestFortBuilderEngine(unittest.TestCase):
 
     def test_educational_minigames_present(self):
         """Verify all 8 tablet educational games are defined."""
+        # Step 6: Verify handler functions for all 8 educational mini-games exist
         required_games = [
             "startMathGame",
             "startSpellingGame",
@@ -58,12 +65,14 @@ class TestFortBuilderEngine(unittest.TestCase):
 
     def test_screen_navigation_routes(self):
         """Verify all screen transitions exist in the engine."""
+        # Step 7: Validate screen state transition routines for workflow progression
         screens = ["showScreen", "startGame", "goToToys", "goToCharacter", "goToPlay", "goToTitle"]
         for screen_func in screens:
             self.assertIn(f"function {screen_func}", self.game_js, f"Missing screen transition: {screen_func}")
 
     def test_dom_structure(self):
         """Verify that index.html contains necessary screens and game canvas/containers."""
+        # Step 8: Validate the existence of screen container elements in the DOM structure
         self.assertIn('id="title-screen"', self.index_html)
         self.assertIn('id="build-screen"', self.index_html)
         self.assertIn('id="toys-screen"', self.index_html)
@@ -72,6 +81,7 @@ class TestFortBuilderEngine(unittest.TestCase):
 
     def test_stylesheet_rules(self):
         """Verify critical CSS styling classes exist."""
+        # Step 9: Confirm critical CSS classes and ID selectors are declared in style.css
         self.assertIn(".screen", self.style_css)
         self.assertIn(".fort-item", self.style_css)
         self.assertIn("#tablet-game", self.style_css)
