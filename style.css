@@ -1,3 +1,11 @@
+/*
+ * Program: fortz - style.css
+ * Programmer: Ethan-da-Tech-Wizard (written with Claude, an AI assistant)
+ * Last Modified: 2026-11-18
+ * Purpose: All the colors, layout and animations for the Fort Builder pages in index.html,
+ *          from the title screen through the tablet mini-games, plus a small-screen layout.
+ */
+
 /**
  * Program: Fort Builder Styling Engine
  * Programmer: Ethan Kilmer
@@ -6,12 +14,14 @@
  *          drag-and-drop materials, avatar customization, and tablet modal apps.
  */
 
+/* Reset: remove default spacing and make width/height include padding and border. */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+/* Page background: a purple gradient, a playful font, and no sideways scrolling. */
 body {
     font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -19,12 +29,14 @@ body {
     overflow-x: hidden;
 }
 
+/* Centers the whole game in a column no wider than 900px. */
 #game-container {
     max-width: 900px;
     margin: 0 auto;
     padding: 20px;
 }
 
+/* Every screen is hidden by default; only the one with .active is shown (see showScreen in game.js). */
 .screen {
     display: none;
     animation: fadeIn 0.5s ease;
@@ -34,11 +46,13 @@ body {
     display: block;
 }
 
+/* Screens fade in while sliding up slightly. */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* The big bouncing title text. */
 /* Title Screen */
 #title-screen {
     text-align: center;
@@ -52,17 +66,20 @@ body {
     animation: bounce 2s infinite;
 }
 
+/* Moves the title up and down forever. */
 @keyframes bounce {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-20px); }
 }
 
+/* The line of text under the title. */
 .subtitle {
     font-size: 1.5em;
     color: #ffe0f0;
     margin: 20px 0 40px;
 }
 
+/* The large pink 'next step' button; it grows when hovered. */
 .big-button {
     font-family: inherit;
     font-size: 1.5em;
@@ -82,6 +99,7 @@ body {
     box-shadow: 0 8px 25px rgba(255, 107, 157, 0.6);
 }
 
+/* A smaller see-through button, used for Home. */
 .small-button {
     font-family: inherit;
     font-size: 1em;
@@ -99,6 +117,7 @@ body {
     background: rgba(255, 255, 255, 0.4);
 }
 
+/* Headings and text shared by the build, toys, character and play screens. */
 /* Build Screen */
 #build-screen h2, #toys-screen h2, #character-screen h2, #play-screen h2 {
     color: white;
@@ -115,6 +134,7 @@ body {
     font-size: 1.1em;
 }
 
+/* The row of blankets and pillows that can be dragged. */
 #build-materials {
     display: flex;
     flex-wrap: wrap;
@@ -123,6 +143,7 @@ body {
     margin-bottom: 15px;
 }
 
+/* One draggable material chip. */
 .material {
     background: rgba(255, 255, 255, 0.9);
     padding: 10px 15px;
@@ -143,6 +164,7 @@ body {
     cursor: grabbing;
 }
 
+/* The dashed box where materials are dropped. */
 #fort-area {
     background: rgba(255, 255, 255, 0.15);
     border: 3px dashed rgba(255, 255, 255, 0.5);
@@ -154,17 +176,20 @@ body {
     position: relative;
 }
 
+/* Highlight while something is dragged over the box. */
 #fort-area.drag-over {
     background: rgba(255, 255, 255, 0.3);
     border-color: #ff6b9d;
 }
 
+/* The faint 'Drop items here' message. */
 #fort-hint {
     color: rgba(255, 255, 255, 0.6);
     font-size: 1.2em;
     padding-top: 60px;
 }
 
+/* Lays out the placed items in a wrapping row. */
 #fort-items {
     display: flex;
     flex-wrap: wrap;
@@ -172,6 +197,7 @@ body {
     justify-content: center;
 }
 
+/* A placed item; it pops in with the plop animation. */
 .fort-item {
     font-size: 2.5em;
     animation: plop 0.3s ease;
@@ -183,13 +209,16 @@ body {
     transform: scale(1.2);
 }
 
+/* Grow from nothing with a small overshoot. */
 @keyframes plop {
     0% { transform: scale(0); }
     80% { transform: scale(1.2); }
     100% { transform: scale(1); }
 }
 
+/* The grid of toy cards. */
 /* Toys Screen */
+/* Responsive grid: as many 110px-minimum columns as fit. */
 #toy-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -197,6 +226,7 @@ body {
     margin-bottom: 20px;
 }
 
+/* One toy card. */
 .toy-card {
     background: rgba(255, 255, 255, 0.9);
     border-radius: 15px;
@@ -211,6 +241,7 @@ body {
     transform: scale(1.05);
 }
 
+/* Pink gradient for toys the player has picked. */
 .toy-card.selected {
     background: linear-gradient(135deg, #ff6b9d, #ff8a5c);
     color: white;
@@ -218,6 +249,7 @@ body {
     box-shadow: 0 5px 20px rgba(255, 107, 157, 0.4);
 }
 
+/* Large toy picture. */
 .toy-emoji {
     font-size: 2.5em;
     display: block;
@@ -229,6 +261,7 @@ body {
     font-weight: bold;
 }
 
+/* The 'Your Toys' basket box and its contents. */
 #selected-toys {
     background: rgba(255, 255, 255, 0.15);
     border-radius: 15px;
@@ -255,7 +288,9 @@ body {
     animation: plop 0.3s ease;
 }
 
+/* The avatar creator: preview on one side, option buttons on the other. */
 /* Character Screen */
+/* Flex row that wraps on narrow screens. */
 #character-creator {
     display: flex;
     gap: 25px;
@@ -264,6 +299,7 @@ body {
     justify-content: center;
 }
 
+/* White card showing the stacked avatar emoji. */
 #character-preview {
     background: rgba(255, 255, 255, 0.9);
     border-radius: 20px;
@@ -282,6 +318,7 @@ body {
     line-height: 1.1;
 }
 
+/* Takes the remaining width beside the preview. */
 #character-options {
     flex: 1;
     min-width: 250px;
@@ -297,12 +334,14 @@ body {
     font-size: 1em;
 }
 
+/* A wrapping row of option buttons. */
 .option-row {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
 }
 
+/* One emoji choice button. */
 .option-btn {
     font-size: 1.8em;
     background: rgba(255, 255, 255, 0.85);
@@ -317,12 +356,14 @@ body {
     transform: scale(1.15);
 }
 
+/* Pink outline for the current choice. */
 .option-btn.selected {
     border-color: #ff6b9d;
     background: white;
     box-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
 }
 
+/* The name text box and its label. */
 .name-input {
     text-align: center;
     margin-bottom: 10px;
@@ -345,15 +386,18 @@ body {
     width: 200px;
 }
 
+/* The fort scene where the avatar moves. */
 /* Play Screen */
 #fort-title {
     margin-bottom: 10px;
 }
 
+/* Positioning parent for the scene. */
 #play-area {
     position: relative;
 }
 
+/* The scene box with a purple gradient; game.js may replace the gradient based on blanket color. */
 #fort-scene {
     background: linear-gradient(180deg, #2d1b4e 0%, #4a2d6e 30%, #6b4d8e 100%);
     border-radius: 20px;
@@ -364,6 +408,7 @@ body {
     margin-bottom: 15px;
 }
 
+/* Striped roof strip that shows the fort item emoji. */
 #fort-roof {
     height: 60px;
     background: repeating-linear-gradient(
@@ -381,12 +426,14 @@ body {
     color: rgba(255, 255, 255, 0.3);
 }
 
+/* Inner room; position:relative so the avatar can be placed inside it. */
 #fort-inside {
     padding: 20px;
     min-height: 280px;
     position: relative;
 }
 
+/* The avatar is absolutely positioned; game.js changes left/top in percent. translate(-50%,-50%) centers it on that point. */
 #player-character {
     position: absolute;
     font-size: 2.5em;
@@ -400,6 +447,7 @@ body {
     line-height: 1;
 }
 
+/* The toys sit along the bottom of the room. */
 #placed-toys {
     display: flex;
     flex-wrap: wrap;
@@ -411,6 +459,7 @@ body {
     right: 20px;
 }
 
+/* A toy that gently floats up and down. */
 .placed-toy {
     font-size: 2em;
     cursor: pointer;
@@ -422,11 +471,13 @@ body {
     transform: scale(1.3);
 }
 
+/* Small up-and-down motion. */
 @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-8px); }
 }
 
+/* The four arrow buttons. */
 #play-controls {
     display: flex;
     justify-content: center;
@@ -434,6 +485,7 @@ body {
     margin-bottom: 10px;
 }
 
+/* One arrow button. */
 .play-btn {
     font-size: 1.8em;
     background: rgba(255, 255, 255, 0.2);
@@ -449,6 +501,7 @@ body {
     transform: scale(1.1);
 }
 
+/* Row of Wave, Dance, Jump and Sleep buttons. */
 #play-actions {
     display: flex;
     justify-content: center;
@@ -457,6 +510,7 @@ body {
     margin-bottom: 15px;
 }
 
+/* One action button. */
 .action-btn {
     font-family: inherit;
     font-size: 1em;
@@ -474,6 +528,7 @@ body {
     transform: scale(1.05);
 }
 
+/* Blue 'Open Tablet' button. */
 .tablet-btn {
     font-family: inherit;
     font-size: 1.3em;
@@ -494,7 +549,9 @@ body {
     box-shadow: 0 8px 25px rgba(79, 172, 254, 0.6);
 }
 
+/* The tablet frame and its mini-games. */
 /* Tablet Screen */
+/* Dark rounded tablet body. */
 #tablet-frame {
     background: #1a1a2e;
     border-radius: 30px;
@@ -505,6 +562,7 @@ body {
     border: 4px solid #333;
 }
 
+/* Title on the left, close button on the right. */
 #tablet-header {
     display: flex;
     justify-content: space-between;
@@ -518,6 +576,7 @@ body {
     text-shadow: none;
 }
 
+/* Round X button; turns red on hover. */
 .close-btn {
     font-size: 1.5em;
     background: rgba(255, 255, 255, 0.1);
@@ -534,12 +593,14 @@ body {
     background: rgba(255, 100, 100, 0.5);
 }
 
+/* Grid of 4 app icons per row. */
 #app-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 15px;
 }
 
+/* One app icon tile. */
 .app-icon {
     background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
     border-radius: 20px;
@@ -565,14 +626,17 @@ body {
     font-size: 0.8em;
 }
 
+/* Panel that shows the running mini-game. */
 #tablet-game {
     padding: 10px;
 }
 
+/* Hidden until a game is started. */
 #tablet-game.hidden {
     display: none;
 }
 
+/* The Back button inside a game. */
 .back-btn {
     font-family: inherit;
     font-size: 1em;
@@ -590,6 +654,7 @@ body {
     background: rgba(255, 255, 255, 0.3);
 }
 
+/* Box that game.js fills with each mini-game. */
 #game-area {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 15px;
@@ -604,11 +669,13 @@ body {
     margin-bottom: 15px;
 }
 
+/* Big question text. */
 #game-area .game-question {
     font-size: 2em;
     margin: 20px 0;
 }
 
+/* Wrapping row of answer buttons. */
 #game-area .game-choices {
     display: flex;
     flex-wrap: wrap;
@@ -616,6 +683,7 @@ body {
     justify-content: center;
 }
 
+/* One answer button. */
 #game-area .game-choice {
     font-family: inherit;
     font-size: 1.3em;
@@ -634,22 +702,26 @@ body {
     transform: scale(1.05);
 }
 
+/* Green after a right answer. */
 #game-area .game-choice.correct {
     background: rgba(0, 200, 100, 0.5);
     border-color: #00c864;
 }
 
+/* Red after a wrong answer. */
 #game-area .game-choice.wrong {
     background: rgba(255, 80, 80, 0.5);
     border-color: #ff5050;
 }
 
+/* Score line. */
 #game-area .score-display {
     font-size: 1.2em;
     margin-bottom: 10px;
     color: #4facfe;
 }
 
+/* Drawing canvas; touch-action:none stops page scrolling while drawing. */
 #game-area .drawing-canvas {
     background: white;
     border-radius: 10px;
@@ -659,6 +731,7 @@ body {
     touch-action: none;
 }
 
+/* Row of pen colors. */
 #game-area .color-picker {
     display: flex;
     gap: 8px;
@@ -666,6 +739,7 @@ body {
     margin: 10px 0;
 }
 
+/* One color circle. */
 #game-area .color-dot {
     width: 35px;
     height: 35px;
@@ -675,12 +749,14 @@ body {
     transition: all 0.2s;
 }
 
+/* Enlarge and outline hovered or selected dots. */
 #game-area .color-dot:hover,
 #game-area .color-dot.active {
     transform: scale(1.2);
     border-color: white;
 }
 
+/* Grid of music keys, 4 per row. */
 #game-area .music-pad {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -689,6 +765,7 @@ body {
     margin: 0 auto;
 }
 
+/* One music key. */
 #game-area .music-key {
     font-size: 1.5em;
     padding: 20px;
@@ -703,7 +780,9 @@ body {
     transform: scale(0.95);
 }
 
+/* The floating emoji shown by showPopup in game.js. */
 /* Action popup */
+/* Fixed to the screen center, above everything, ignoring clicks. */
 #action-popup {
     position: fixed;
     top: 50%;
@@ -715,16 +794,19 @@ body {
     pointer-events: none;
 }
 
+/* Not shown when hidden. */
 #action-popup.hidden {
     display: none;
 }
 
+/* Grow, then fade out while floating upward. */
 @keyframes popUp {
     0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
     50% { transform: translate(-50%, -50%) scale(1.2); }
     100% { opacity: 0; transform: translate(-50%, -80%) scale(1); }
 }
 
+/* Smaller-screen adjustments (600px wide and below). */
 /* Responsive */
 @media (max-width: 600px) {
     #title-screen h1 {
