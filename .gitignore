@@ -1,0 +1,4 @@
+
+# Compiled Python bytecode (regenerated on every test run)
+__pycache__/
+*.pyc
