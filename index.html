@@ -5,21 +5,48 @@
 // Purpose: Responsive single-page web interface for constructing blanket forts,
 //          managing toy collections, customizing avatar appearance, rendering
 //          interactive play scenes, and presenting 8 educational tablet mini-games.
+//
+// How it fits: the single page of the app. Markup here is static; game.js builds the dynamic
+//   parts (toy grid, avatar option rows, play scene, mini-games) by filling the empty
+//   containers below, and style.css styles everything. Every button uses an inline onclick
+//   that calls a global function in game.js (named in the comment above each group).
+//
+// Screen model: each `<div class="screen">` is one step of the game. Exactly one has the
+//   class `active` at a time (game.js showScreen); the title screen starts active.
+//   `hidden` is a separate helper class used for the tablet game panel and popup.
+//
+// Accessibility notes: controls are <button> elements (keyboard focusable) except the
+//   material tiles and tablet app icons, which are clickable <div>s and are therefore not
+//   keyboard reachable (known limit). Emoji carry the meaning visually; there is no
+//   screen-reader text. The viewport meta keeps the page scalable on phones.
+//
+// Test: tests/test_fort_builder.py checks that the screen ids below exist.
 // ============================================================================== -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+    <!-- UTF-8 so the emoji used throughout the UI are decoded correctly (must come within the
+         first 1024 bytes). -->
     <meta charset="UTF-8">
     <!-- Viewport configuration for responsive mobile and desktop scaling -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Tab title; tests do not depend on it. -->
     <title>Fort Builder Game!</title>
     <!-- Core game presentation stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <!-- Primary outer application container -->
+
+    <!-- Root of the app. style.css gives it the centred, fixed-width card look; every
+         .screen below lives inside it so screens swap in place without page navigation. -->
     <div id="game-container">
         <!-- View 0: Title and Welcome Screen -->
+
+        <!-- Title screen: first thing seen (class `active` is set here in markup, not by script).
+             onclick startGame() -> game.js showScreen('build-screen'). -->
         <div id="title-screen" class="screen active">
             <h1>Fort Builder!</h1>
             <p class="subtitle">Build your dream fort and play inside!</p>
@@ -27,10 +54,18 @@
         </div>
 
         <!-- Step 1: Fort Construction Screen (Drag-and-Drop Area) -->
+
+        <!-- Build screen: owned by game.js setupDragAndDrop/addToFort/renderFort. -->
         <div id="build-screen" class="screen">
             <h2>Build Your Fort!</h2>
             <p>Drag blankets and pillows onto the fort area to build!</p>
             <!-- Palette of draggable building materials with metadata attributes -->
+
+            <!-- Palette of materials. Each `.material` is draggable (HTML5 DnD) and carries data-type
+                 (category + colour, e.g. blanket-red; the 'blanket' prefix drives the play-scene
+                 background colour) and data-emoji (the glyph placed in the fort). The visible label
+                 emoji can differ from data-emoji (a square in the palette becomes a coloured circle in
+                 the fort); that is intentional so placed items read as small round tokens. -->
             <div id="build-materials">
                 <div class="material" draggable="true" data-type="blanket-red" data-emoji="🔴">🟥 Red Blanket</div>
                 <div class="material" draggable="true" data-type="blanket-blue" data-emoji="🔵">🟦 Blue Blanket</div>
@@ -46,33 +81,53 @@
                 <div class="material" draggable="true" data-type="fairy-lights" data-emoji="✨">✨ Fairy Lights</div>
             </div>
             <!-- Target drop zone for placing blanket fort architectural components -->
+
+            <!-- Drop target and display for placed items. #fort-hint is the empty-state message that
+                 renderFort hides after the first item; #fort-items is rewritten by renderFort on every
+                 change. Clicking a placed item removes it. -->
             <div id="fort-area">
                 <p id="fort-hint">Drop items here to build your fort!</p>
                 <div id="fort-items"></div>
             </div>
+
+            <!-- Advance: goToToys() shows toys-screen and builds #toy-grid. -->
             <button class="big-button" onclick="goToToys()">Pick Toys! →</button>
         </div>
 
         <!-- Step 2: Toy Catalog & Basket Selection Screen -->
+
+        <!-- Toy screen: owned by renderToyGrid/toggleToy/renderToyBasket in game.js. -->
         <div id="toys-screen" class="screen">
             <h2>Pick Your Toys!</h2>
             <p>Choose the toys you want in your fort!</p>
             <!-- Dynamically populated 40+ item toy selection grid -->
+
+            <!-- Empty until renderToyGrid fills it with one .toy-card per entry of allToys. -->
             <div id="toy-grid"></div>
             <!-- Selected inventory basket displaying count and emojis -->
+
+            <!-- Summary of the chosen toys. #toy-count is a number written by renderToyBasket and
+                 #toy-basket receives the chosen emoji. -->
             <div id="selected-toys">
                 <h3>Your Toys: <span id="toy-count">0</span></h3>
                 <div id="toy-basket"></div>
             </div>
+
+            <!-- Advance: goToCharacter() shows character-screen. -->
             <button class="big-button" onclick="goToCharacter()">Make Your Person! →</button>
         </div>
 
         <!-- Step 3: Avatar Character Customization Screen -->
+
+        <!-- Character screen: owned by renderCharacterOptions/selectOption in game.js. -->
         <div id="character-screen" class="screen">
             <h2>Make Your Person!</h2>
             <div id="character-creator">
                 <!-- Real-time avatar preview composite -->
                 <div id="character-preview">
+
+                    <!-- The four preview spans are overwritten by updateCharacterPreview. Their initial
+                         content only matters for the first frame and matches gameState.character defaults. -->
                     <div id="char-hair">👱</div>
                     <div id="char-face">😊</div>
                     <div id="char-outfit">👕</div>
@@ -80,6 +135,10 @@
                 </div>
                 <!-- Selection options categorized by hair, face, outfit, and shoes -->
                 <div id="character-options">
+
+                    <!-- One option group per avatar slot. The .option-row ids (hair-options, face-options,
+                         outfit-options, shoes-options) must equal '<charOptions key>-options' because game.js
+                         builds the id from the key. -->
                     <div class="option-group">
                         <h3>Hair</h3>
                         <div class="option-row" id="hair-options"></div>
@@ -98,14 +157,22 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Player name, read by goToPlay(). maxlength 20 keeps the '<name>'s Fort!' title on one
+                 line; an empty value falls back to 'Player'. -->
             <div class="name-input">
                 <label>Name your person: </label>
                 <input type="text" id="char-name" placeholder="Type a name..." maxlength="20">
             </div>
+
+            <!-- Advance: goToPlay() saves the name and builds the play scene. -->
             <button class="big-button" onclick="goToPlay()">Go Play! →</button>
         </div>
 
         <!-- Step 4: Interactive In-Fort Play Mode & Simulation Scene -->
+
+        <!-- Play screen: owned by renderPlayScene, moveCharacter and doAction in game.js.
+             #fort-title is set from the player's name. -->
         <div id="play-screen" class="screen">
             <h2 id="fort-title">Your Fort!</h2>
             <div id="play-area">
@@ -125,6 +192,9 @@
                     <button class="play-btn" onclick="moveCharacter('right')">➡️</button>
                 </div>
                 <!-- Animation triggers: wave, dance, jump, and sleep -->
+
+                <!-- Action buttons call doAction(name) in game.js. Space on the keyboard triggers 'jump'
+                     the same way; arrow keys / WASD trigger moveCharacter. -->
                 <div id="play-actions">
                     <button class="action-btn" onclick="doAction('wave')">👋 Wave</button>
                     <button class="action-btn" onclick="doAction('dance')">💃 Dance</button>
@@ -132,11 +202,16 @@
                     <button class="action-btn" onclick="doAction('sleep')">😴 Sleep</button>
                 </div>
             </div>
+
+            <!-- Tablet launcher and Home. Both are siblings of #play-area so they stay below the scene. -->
             <button class="tablet-btn" onclick="openTablet()">📱 Open Tablet</button>
             <button class="small-button" onclick="goToTitle()">🏠 Home</button>
         </div>
 
         <!-- Educational Tablet Modal & Mini-Game Runner -->
+
+        <!-- Tablet screen: a normal .screen that acts as a modal frame around the mini-games.
+             #tablet-frame is the device look; closeTablet() returns to the play screen. -->
         <div id="tablet-screen" class="screen">
             <div id="tablet-frame">
                 <div id="tablet-header">
@@ -145,6 +220,10 @@
                 </div>
                 <div id="tablet-content">
                     <!-- Tablet Home: 8 educational launcher icons -->
+
+                    <!-- Launcher. Each .app-icon's onclick passes a game key to playTabletGame(); the keys
+                         (math, spelling, colors, counting, shapes, animals, music, drawing) must match the
+                         switch in game.js. -->
                     <div id="app-grid">
                         <div class="app-icon" onclick="playTabletGame('math')">
                             <span class="app-emoji">🔢</span>
@@ -180,6 +259,9 @@
                         </div>
                     </div>
                     <!-- Tablet Active Game Area (includes HTML5 Canvas for drawing) -->
+
+                    <!-- Active-game panel, hidden until an app is opened. game.js writes each game's markup
+                         (including the <canvas> for Drawing) into #game-area. Back calls backToApps(). -->
                     <div id="tablet-game" class="hidden">
                         <button class="back-btn" onclick="backToApps()">← Back</button>
                         <div id="game-area"></div>
@@ -189,10 +271,18 @@
         </div>
 
         <!-- Action feedback popup indicator -->
+
+        <!-- Floating emoji message used by showPopup(); hidden by default and re-shown by
+             restarting the popUp CSS animation. Placed last in #game-container so it can overlay
+             any screen. -->
         <div id="action-popup" class="hidden"></div>
     </div>
 
     <!-- Main game logic and physics script -->
+
+    <!-- Loaded last so every element above exists when game.js runs; it is a classic script
+         (not a module), which is required for the inline onclick handlers to find its global
+         functions. -->
     <script src="game.js"></script>
 </body>
 </html>

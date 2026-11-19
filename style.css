@@ -4,14 +4,40 @@
  * Last Modified: 11/08/2026
  * Purpose: Visual presentation and responsive layout for Fort Builder screens,
  *          drag-and-drop materials, avatar customization, and tablet modal apps.
+ *
+ * How it fits: the only stylesheet, linked from index.html. It styles the static ids/classes
+ *   in index.html and the markup that game.js generates (.toy-card, .option-btn, .fort-item,
+ *   .game-choice, ...). State is driven entirely by classes that game.js toggles:
+ *   `.screen.active` (which screen shows), `.selected` (chosen toy/option), `.drag-over`
+ *   (drop target hover), `.correct` / `.wrong` (answer feedback), `.hidden` (tablet game
+ *   panel and popup) and `.active` on colour dots.
+ *
+ * Layout system: a single centred column (#game-container, 900px max). Inside it, flexbox
+ *   centres rows of buttons and CSS grid lays out the toy and app grids. No frameworks.
+ *
+ * Z-index layers (only two are used): #player-character is 10 (above toys in the scene) and
+ *   #action-popup is 100 (above every screen). Everything else is in normal flow.
+ *
+ * Animation timing: screen fade-in 0.5s; hover transitions 0.2-0.3s; popup 1s (this must
+ *   match the 1000ms hide timeout in game.js showPopup); fort items "plop" in 0.3s.
+ *
+ * Breakpoint: one, max-width 600px (phones), at the bottom of the file.
+ * Test: tests/test_fort_builder.py only checks that .screen, .fort-item and #tablet-game
+ *   selectors still exist.
  */
 
+/* Reset: remove browser default spacing and use border-box sizing so padding never makes
+   an element wider than its declared width (keeps the grids and the 900px column exact). */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+/* Page background: a diagonal purple gradient behind every screen. The fun cursive font
+   stack falls back through macOS (Chalkboard SE) to the generic `cursive`, then sans-serif.
+   overflow-x hidden hides the horizontal scrollbar that the scale-up hover effects could
+   otherwise cause near the viewport edges. */
 body {
     font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -19,12 +45,16 @@ body {
     overflow-x: hidden;
 }
 
+/* Centred 900px column with 20px breathing room; every screen lives inside it. */
 #game-container {
     max-width: 900px;
     margin: 0 auto;
     padding: 20px;
 }
 
+/* Screen switching: screens are hidden by default and only `.screen.active` is shown (game.js
+   showScreen moves that class). The fadeIn animation replays each time display flips from
+   none to block, giving every screen change a slide-up fade for free. */
 .screen {
     display: none;
     animation: fadeIn 0.5s ease;
@@ -34,17 +64,21 @@ body {
     display: block;
 }
 
+/* Enter animation for screens: 20px below and transparent to in place and opaque. */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Title Screen */
+/*  */
+/* ===== Title screen ===== */
 #title-screen {
     text-align: center;
     padding-top: 80px;
 }
 
+/* Layered text-shadow fakes a 3D sticker: two hard offset shadows (3px pink, then 6px
+   purple) with no blur. The bounce keyframes move it up 20px and back every 2 seconds. */
 #title-screen h1 {
     font-size: 4em;
     color: #fff;
@@ -52,6 +86,7 @@ body {
     animation: bounce 2s infinite;
 }
 
+/* Vertical bob used by the title; 0% and 100% rest, 50% is the high point. */
 @keyframes bounce {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-20px); }
@@ -63,6 +98,8 @@ body {
     margin: 20px 0 40px;
 }
 
+/* Primary call-to-action button (Next/Start): pill shape (50px radius), pink-to-orange
+   gradient, glow shadow. Grows 10% on hover (see below) so small fingers get feedback. */
 .big-button {
     font-family: inherit;
     font-size: 1.5em;
@@ -82,6 +119,7 @@ body {
     box-shadow: 0 8px 25px rgba(255, 107, 157, 0.6);
 }
 
+/* Secondary translucent button (Home); inherits the font because buttons do not by default. */
 .small-button {
     font-family: inherit;
     font-size: 1em;
@@ -99,7 +137,10 @@ body {
     background: rgba(255, 255, 255, 0.4);
 }
 
-/* Build Screen */
+/* ===== Build screen (also shared headings for toys, character and play screens) ===== */
+
+/* Shared heading style for the four middle screens; the text shadow keeps white text
+   readable over the light parts of the gradient. */
 #build-screen h2, #toys-screen h2, #character-screen h2, #play-screen h2 {
     color: white;
     font-size: 2.2em;
@@ -115,6 +156,7 @@ body {
     font-size: 1.1em;
 }
 
+/* Wrapping row of draggable materials, centred, 8px apart. */
 #build-materials {
     display: flex;
     flex-wrap: wrap;
@@ -123,6 +165,8 @@ body {
     margin-bottom: 15px;
 }
 
+/* A palette tile. user-select:none stops a drag from selecting its text; cursor:grab
+   tells the player it can be dragged (switches to grabbing while pressed, below). */
 .material {
     background: rgba(255, 255, 255, 0.9);
     padding: 10px 15px;
@@ -143,6 +187,8 @@ body {
     cursor: grabbing;
 }
 
+/* Drop zone: dashed translucent border signals 'drop here'. position:relative is not needed
+   by children today but anchors any absolutely positioned decoration later. */
 #fort-area {
     background: rgba(255, 255, 255, 0.15);
     border: 3px dashed rgba(255, 255, 255, 0.5);
@@ -154,17 +200,21 @@ body {
     position: relative;
 }
 
+/* Applied by game.js while an item is dragged over the zone: brighter fill and a pink border. */
 #fort-area.drag-over {
     background: rgba(255, 255, 255, 0.3);
     border-color: #ff6b9d;
 }
 
+/* Empty-state message; padding-top centres it vertically in the 200px zone. game.js hides
+   it with inline style once an item exists. */
 #fort-hint {
     color: rgba(255, 255, 255, 0.6);
     font-size: 1.2em;
     padding-top: 60px;
 }
 
+/* Placed items wrap and centre like a pile of emoji. */
 #fort-items {
     display: flex;
     flex-wrap: wrap;
@@ -172,6 +222,8 @@ body {
     justify-content: center;
 }
 
+/* One placed emoji. The 'plop' animation runs on every redraw (renderFort rewrites the
+   list), so all items pop in again after each add or remove, which is a known visual quirk. */
 .fort-item {
     font-size: 2.5em;
     animation: plop 0.3s ease;
@@ -183,13 +235,17 @@ body {
     transform: scale(1.2);
 }
 
+/* Grow-from-nothing with a small overshoot (80% is 1.2x) before settling at 1x. */
 @keyframes plop {
     0% { transform: scale(0); }
     80% { transform: scale(1.2); }
     100% { transform: scale(1); }
 }
 
-/* Toys Screen */
+/* ===== Toys screen ===== */
+
+/* Responsive card grid: as many columns as fit when each card is at least 110px, sharing
+   leftover width equally (auto-fill + 1fr). No media query needed except the phone tweak below. */
 #toy-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -211,6 +267,8 @@ body {
     transform: scale(1.05);
 }
 
+/* Chosen toys use the same pink-orange gradient as primary buttons and stay slightly
+   enlarged, so selection is visible at a glance without reading text. */
 .toy-card.selected {
     background: linear-gradient(135deg, #ff6b9d, #ff8a5c);
     color: white;
@@ -229,6 +287,8 @@ body {
     font-weight: bold;
 }
 
+/* Summary panel below the grid; #toy-basket's min-height keeps the panel from collapsing
+   when no toy is chosen yet. */
 #selected-toys {
     background: rgba(255, 255, 255, 0.15);
     border-radius: 15px;
@@ -250,12 +310,16 @@ body {
     min-height: 40px;
 }
 
+/* Reuses the 'plop' keyframes so each chosen toy appears with a pop. */
 .basket-item {
     font-size: 1.8em;
     animation: plop 0.3s ease;
 }
 
-/* Character Screen */
+/* ===== Character screen ===== */
+
+/* Preview on the left, option rows on the right; flex-wrap lets them stack on narrow screens
+   (the phone breakpoint makes this an explicit column). */
 #character-creator {
     display: flex;
     gap: 25px;
@@ -264,6 +328,8 @@ body {
     justify-content: center;
 }
 
+/* White card showing the avatar parts stacked vertically. min-width keeps it from shrinking
+   when the option column is wide. */
 #character-preview {
     background: rgba(255, 255, 255, 0.9);
     border-radius: 20px;
@@ -277,11 +343,14 @@ body {
     gap: 2px;
 }
 
+/* Each part (#char-hair, #char-face, ...) is a div, so this one rule sizes them all;
+   line-height 1.1 packs the emoji closely so the figure looks like one body. */
 #character-preview div {
     font-size: 3em;
     line-height: 1.1;
 }
 
+/* flex:1 gives the options all remaining width; min-width 250px triggers wrapping below that. */
 #character-options {
     flex: 1;
     min-width: 250px;
@@ -303,6 +372,8 @@ body {
     gap: 6px;
 }
 
+/* Emoji choice button. A transparent 3px border is always present so the pink selected
+   border (below) does not change the button's size and shift neighbours. */
 .option-btn {
     font-size: 1.8em;
     background: rgba(255, 255, 255, 0.85);
@@ -317,6 +388,7 @@ body {
     transform: scale(1.15);
 }
 
+/* Current choice: pink border plus soft glow. */
 .option-btn.selected {
     border-color: #ff6b9d;
     background: white;
@@ -334,6 +406,8 @@ body {
     margin-right: 10px;
 }
 
+/* outline:none removes the default focus ring; the 200px width fits the 20-character
+   maxlength set in index.html. */
 .name-input input {
     font-family: inherit;
     font-size: 1.2em;
@@ -345,7 +419,7 @@ body {
     width: 200px;
 }
 
-/* Play Screen */
+/* ===== Play screen ===== */
 #fort-title {
     margin-bottom: 10px;
 }
@@ -354,6 +428,8 @@ body {
     position: relative;
 }
 
+/* The room the avatar walks in. overflow:hidden clips the avatar and toys to the rounded
+   corners. game.js may replace this gradient inline with a blanket-colour one. */
 #fort-scene {
     background: linear-gradient(180deg, #2d1b4e 0%, #4a2d6e 30%, #6b4d8e 100%);
     border-radius: 20px;
@@ -364,6 +440,8 @@ body {
     margin-bottom: 15px;
 }
 
+/* Striped band along the top of the room: a repeating gradient (30px clear, 30px faint
+   white) fakes blanket folds. The text inside shows the placed fort items at low opacity. */
 #fort-roof {
     height: 60px;
     background: repeating-linear-gradient(
@@ -381,12 +459,16 @@ body {
     color: rgba(255, 255, 255, 0.3);
 }
 
+/* Positioning context for the avatar and toys (they are absolutely positioned inside it). */
 #fort-inside {
     padding: 20px;
     min-height: 280px;
     position: relative;
 }
 
+/* Avatar. left/top are the starting 50%/50%; game.js moveCharacter overwrites them inline.
+   The translate(-50%, -50%) centres the emoji on that point. `transition: all 0.3s` is what
+   makes walking glide instead of jump. z-index 10 keeps it above toys. */
 #player-character {
     position: absolute;
     font-size: 2.5em;
@@ -400,6 +482,7 @@ body {
     line-height: 1;
 }
 
+/* Row of toys pinned to the floor of the room (20px from the bottom and sides). */
 #placed-toys {
     display: flex;
     flex-wrap: wrap;
@@ -411,6 +494,7 @@ body {
     right: 20px;
 }
 
+/* Gently floating toy; each toy's animation-delay is set inline by game.js to desynchronise. */
 .placed-toy {
     font-size: 2em;
     cursor: pointer;
@@ -422,11 +506,13 @@ body {
     transform: scale(1.3);
 }
 
+/* 8px up-and-down drift over 3s (looped via animation-iteration-count). */
 @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-8px); }
 }
 
+/* Arrow-button row under the scene. */
 #play-controls {
     display: flex;
     justify-content: center;
@@ -434,6 +520,7 @@ body {
     margin-bottom: 10px;
 }
 
+/* Arrow button; font-size large so touch targets are comfortable. */
 .play-btn {
     font-size: 1.8em;
     background: rgba(255, 255, 255, 0.2);
@@ -449,6 +536,7 @@ body {
     transform: scale(1.1);
 }
 
+/* Wave/Dance/Jump/Sleep row. */
 #play-actions {
     display: flex;
     justify-content: center;
@@ -474,6 +562,7 @@ body {
     transform: scale(1.05);
 }
 
+/* Blue gradient button that opens the tablet; display:block + auto margins centres it. */
 .tablet-btn {
     font-family: inherit;
     font-size: 1.3em;
@@ -494,7 +583,9 @@ body {
     box-shadow: 0 8px 25px rgba(79, 172, 254, 0.6);
 }
 
-/* Tablet Screen */
+/* ===== Tablet screen (mini-games) ===== */
+
+/* The tablet bezel: dark body, thick grey border and big radius, centred, 600px max. */
 #tablet-frame {
     background: #1a1a2e;
     border-radius: 30px;
@@ -505,6 +596,7 @@ body {
     border: 4px solid #333;
 }
 
+/* Title on the left, close button on the right. */
 #tablet-header {
     display: flex;
     justify-content: space-between;
@@ -512,12 +604,14 @@ body {
     margin-bottom: 20px;
 }
 
+/* Overrides the shared screen-heading rule (white text with shadow): smaller, no shadow. */
 #tablet-header h2 {
     color: white;
     font-size: 1.5em;
     text-shadow: none;
 }
 
+/* Circular close button; turns red-tinted on hover to signal 'leave'. */
 .close-btn {
     font-size: 1.5em;
     background: rgba(255, 255, 255, 0.1);
@@ -534,12 +628,14 @@ body {
     background: rgba(255, 100, 100, 0.5);
 }
 
+/* Four-column launcher (three on phones, see breakpoint). */
 #app-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 15px;
 }
 
+/* One app tile. Faint gradient so tiles read as buttons on the dark frame. */
 .app-icon {
     background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
     border-radius: 20px;
@@ -565,10 +661,12 @@ body {
     font-size: 0.8em;
 }
 
+/* Container for the active game. The `.hidden` rule below is what game.js toggles. */
 #tablet-game {
     padding: 10px;
 }
 
+/* Hidden state while the launcher is showing. Needed because there is no global .hidden rule. */
 #tablet-game.hidden {
     display: none;
 }
@@ -590,6 +688,7 @@ body {
     background: rgba(255, 255, 255, 0.3);
 }
 
+/* Panel into which game.js renders each mini-game; text is white because the frame is dark. */
 #game-area {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 15px;
@@ -604,11 +703,13 @@ body {
     margin-bottom: 15px;
 }
 
+/* Big prompt line shared by all games. */
 #game-area .game-question {
     font-size: 2em;
     margin: 20px 0;
 }
 
+/* Wrapping row of answer buttons. */
 #game-area .game-choices {
     display: flex;
     flex-wrap: wrap;
@@ -616,6 +717,8 @@ body {
     justify-content: center;
 }
 
+/* Answer button. Semi-transparent so it works on the dark panel; min-width keeps one-digit
+   answers from looking tiny next to word answers. */
 #game-area .game-choice {
     font-family: inherit;
     font-size: 1.3em;
@@ -634,22 +737,27 @@ body {
     transform: scale(1.05);
 }
 
+/* Green flash that game.js adds on a right answer (removed when the next question redraws). */
 #game-area .game-choice.correct {
     background: rgba(0, 200, 100, 0.5);
     border-color: #00c864;
 }
 
+/* Red flash added on a wrong answer and removed by game.js after 500ms. */
 #game-area .game-choice.wrong {
     background: rgba(255, 80, 80, 0.5);
     border-color: #ff5050;
 }
 
+/* Running score line above the question. */
 #game-area .score-display {
     font-size: 1.2em;
     margin-bottom: 10px;
     color: #4facfe;
 }
 
+/* White drawing surface. touch-action:none stops the browser scrolling or zooming when a
+   child draws with a finger (otherwise touchmove would be taken for a scroll gesture). */
 #game-area .drawing-canvas {
     background: white;
     border-radius: 10px;
@@ -659,6 +767,7 @@ body {
     touch-action: none;
 }
 
+/* Palette row for the drawing game. */
 #game-area .color-picker {
     display: flex;
     gap: 8px;
@@ -666,6 +775,8 @@ body {
     margin: 10px 0;
 }
 
+/* Colour swatch; the transparent 3px border avoids a size jump when it turns white on hover
+   or `.active`. */
 #game-area .color-dot {
     width: 35px;
     height: 35px;
@@ -675,12 +786,14 @@ body {
     transition: all 0.2s;
 }
 
+/* Hover and the currently chosen colour share one look: enlarged with a white ring. */
 #game-area .color-dot:hover,
 #game-area .color-dot.active {
     transform: scale(1.2);
     border-color: white;
 }
 
+/* Eight keys in a 4x2 grid; 400px max so keys stay square-ish. */
 #game-area .music-pad {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -699,11 +812,17 @@ body {
     font-family: inherit;
 }
 
+/* Pressed-key shrink in CSS; game.js also sets an inline transform for 200ms after a tap so
+   touch screens (which may not hold :active) show the same feedback. */
 #game-area .music-key:active {
     transform: scale(0.95);
 }
 
-/* Action popup */
+/* ===== Action popup ===== */
+
+/* Large emoji message centred in the viewport (position:fixed, so it stays centred even if
+   the page is scrolled). pointer-events:none lets clicks pass through it. z-index 100 puts
+   it above every screen. game.js restarts the animation on every call. */
 #action-popup {
     position: fixed;
     top: 50%;
@@ -715,17 +834,23 @@ body {
     pointer-events: none;
 }
 
+/* Hidden state toggled by game.js showPopup. */
 #action-popup.hidden {
     display: none;
 }
 
+/* Pop and float away: scales from 0.5x to 1.2x to 1x while drifting up 30% of its height and
+   fading out. 'forwards' fill in the rule above keeps the final transparent state. */
 @keyframes popUp {
     0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
     50% { transform: translate(-50%, -50%) scale(1.2); }
     100% { opacity: 0; transform: translate(-50%, -80%) scale(1); }
 }
 
-/* Responsive */
+/* ===== Responsive ===== */
+
+/* Phone layout: smaller title, three app columns instead of four, stacked avatar creator
+   and narrower toy cards so more fit per row. */
 @media (max-width: 600px) {
     #title-screen h1 {
         font-size: 2.5em;

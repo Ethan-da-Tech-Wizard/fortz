@@ -8,6 +8,32 @@
 //          custom toy loadouts, customizing player characters, and engaging in 8 embedded
 //          educational mini-games (Math, Spelling, Colors, Counting, Shapes, Animals, Music, Drawing).
 // ==============================================================================
+//
+// How it fits: this is the only script index.html loads (a classic <script>, not a module,
+//   so every top-level function below is a global that the inline onclick="..." attributes
+//   in index.html call by name). style.css owns all visuals; this file only toggles the
+//   `.screen.active`, `.hidden`, `.selected` and similar state classes and builds markup.
+//   There is no build step, no storage and no network: a page refresh resets everything.
+//
+// Flow of the game (each step is one `.screen` element in index.html):
+//   title-screen -> build-screen (place blankets/pillows/lights) -> toys-screen (pick toys)
+//   -> character-screen (avatar + name) -> play-screen (walk around, click toys, do actions)
+//   -> tablet-screen (eight mini-games rendered into #game-area).
+//
+// Design decisions: markup is produced with template-string innerHTML for brevity; all of
+//   the interpolated values come from constant tables in this file (emoji, toy names, game
+//   words), except the player's typed name, which is only ever written via textContent.
+//   Mini-game handlers are attached to `window` because the generated buttons use inline
+//   onclick, which resolves names in the global scope.
+//
+// Known limits: no persistence, no sound except the Music game, and the toy names are
+//   interpolated into inline onclick strings, so a toy name containing a quote would break
+//   them (the current catalogue has none).
+//
+// Test: tests/test_fort_builder.py only greps this file's source text (catalogue size,
+//   that each function exists, header text); it does not execute the game logic. Run
+//   `python3 -m unittest discover -s tests`, and open index.html in a browser for real play.
+// ==============================================================================
 
 // ==================== CORE GAME STATE ====================
 // Tracks fort structure elements, selected toy inventory, avatar customization, and 2D spatial positioning
@@ -89,21 +115,44 @@ const charOptions = {
 // ==================== SCREEN NAVIGATION ====================
 // Only one element with class "screen" is visible at a time (the one with
 // class "active"). All navigation goes through this function.
+/**
+ * Makes exactly one screen visible by moving the `active` class (CSS shows only
+ * `.screen.active`).
+ *
+ * @param {string} id - DOM id of the target `.screen` element, for example 'play-screen'.
+ *   An unknown id throws a TypeError at classList because getElementById returns null;
+ *   all callers pass literals defined in index.html.
+ * @returns {void}
+ */
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
 }
 
+/**
+ * Title-screen "Start" button handler (index.html onclick): moves on to fort building.
+ * @returns {void}
+ */
 function startGame() {
     showScreen('build-screen');
 }
 
 // Toy screen needs its grid built each time it is shown so selections persist.
+/**
+ * Build-screen "next" handler: shows the toy picker and rebuilds its grid so earlier
+ * selections appear highlighted.
+ * @returns {void}
+ */
 function goToToys() {
     showScreen('toys-screen');
     renderToyGrid();
 }
 
+/**
+ * Toy-screen "next" handler: shows the avatar creator and redraws its option rows so the
+ * current choices are highlighted.
+ * @returns {void}
+ */
 function goToCharacter() {
     showScreen('character-screen');
     renderCharacterOptions();
@@ -111,6 +160,14 @@ function goToCharacter() {
 
 // Leaving the character screen: fall back to the name "Player" when the name
 // box is empty, then build the play scene from the current state.
+/**
+ * Character-screen "next" handler: stores the typed name, shows the play screen and
+ * builds the scene.
+ *
+ * Side effects: writes gameState.character.name and the #fort-title text. The name is
+ * inserted with textContent so a typed `<script>` is displayed, not executed.
+ * @returns {void}
+ */
 function goToPlay() {
     gameState.character.name = document.getElementById('char-name').value || 'Player';
     showScreen('play-screen');
@@ -119,6 +176,11 @@ function goToPlay() {
     renderPlayScene();
 }
 
+/**
+ * Returns to the title screen. Does NOT clear gameState, so pressing Start again keeps the
+ * fort, toys and avatar built so far (a deliberate "continue editing" behaviour).
+ * @returns {void}
+ */
 function goToTitle() {
     showScreen('title-screen');
 }
@@ -127,27 +189,44 @@ function goToTitle() {
 // Wire up the fort-building palette. Three input styles are supported: desktop
 // drag-and-drop, touch (tap a material), and plain click. All three end in
 // addToFort(). Called once on DOMContentLoaded (see bottom of file).
+/**
+ * Attaches input handlers to the material palette and the fort drop area.
+ *
+ * Why three input styles: HTML5 drag-and-drop does not fire on touch screens, and a plain
+ * click is the easiest path for small children, so each material also handles touch and
+ * click. All of them end in addToFort(). Elements are found by the `.material` class and
+ * the #fort-area id from index.html; materials carry their identity in data-emoji and
+ * data-type attributes.
+ *
+ * @returns {void}
+ */
 function setupDragAndDrop() {
     const materials = document.querySelectorAll('.material');
     const fortArea = document.getElementById('fort-area');
 
     materials.forEach(mat => {
+        // Smuggle the material's emoji and type through the drag so the drop handler can
+        // rebuild the item. 'text/plain' is the one type every browser accepts; the custom
+        // 'type' key is allowed by the DataTransfer API but ignored by external drop targets.
         mat.addEventListener('dragstart', (e) => {
             e.dataTransfer.setData('text/plain', mat.dataset.emoji);
             e.dataTransfer.setData('type', mat.dataset.type);
         });
 
-        // Touch support
+        // Touch support. passive:false is required so handleTouch* may call preventDefault();
+        // passive listeners silently ignore it, and the page would scroll or double-fire a click.
         mat.addEventListener('touchstart', handleTouchStart, { passive: false });
         mat.addEventListener('touchmove', handleTouchMove, { passive: false });
         mat.addEventListener('touchend', handleTouchEnd, { passive: false });
 
-        // Click to add (simpler alternative)
+        // Click to add: the simplest path, and the one keyboard/mouse-only users use.
         mat.addEventListener('click', () => {
             addToFort(mat.dataset.emoji, mat.dataset.type);
         });
     });
 
+    // A drop is only permitted if dragover is cancelled with preventDefault(); the
+    // `drag-over` class lets style.css highlight the target while an item hovers over it.
     fortArea.addEventListener('dragover', (e) => {
         e.preventDefault();
         fortArea.classList.add('drag-over');
@@ -157,6 +236,7 @@ function setupDragAndDrop() {
         fortArea.classList.remove('drag-over');
     });
 
+    // On drop, read back what dragstart stored and add it exactly like a click would.
     fortArea.addEventListener('drop', (e) => {
         e.preventDefault();
         fortArea.classList.remove('drag-over');
@@ -172,15 +252,32 @@ let touchDragElement = null;
 
 // preventDefault stops the browser scrolling/emulating a mouse click, which
 // would otherwise add the item twice.
+/**
+ * touchstart on a material: remembers which material was touched.
+ * @param {TouchEvent} e - e.target may be a child span, hence closest('.material').
+ * @returns {void}
+ */
 function handleTouchStart(e) {
     e.preventDefault();
     touchDragElement = e.target.closest('.material');
 }
 
+/**
+ * touchmove on a material: swallowed so a slightly moving finger does not scroll the page
+ * or cancel the tap. No drag preview is drawn; the add happens on touchend.
+ * @param {TouchEvent} e
+ * @returns {void}
+ */
 function handleTouchMove(e) {
     e.preventDefault();
 }
 
+/**
+ * touchend: adds the remembered material (a tap) and clears the memory so a second
+ * touchend with no preceding touchstart cannot add a ghost item.
+ * @param {TouchEvent} e - unused; the element comes from touchDragElement.
+ * @returns {void}
+ */
 function handleTouchEnd(e) {
     if (touchDragElement) {
         addToFort(touchDragElement.dataset.emoji, touchDragElement.dataset.type);
@@ -188,6 +285,15 @@ function handleTouchEnd(e) {
     }
 }
 
+/**
+ * Appends one item to the fort and redraws. Duplicates are allowed on purpose (a fort can
+ * have many red blankets).
+ *
+ * @param {string} emoji - glyph shown in the fort (from data-emoji).
+ * @param {string} type - material key such as 'blanket-red' (from data-type); the play
+ *   scene uses its 'blanket' prefix to pick the background colour.
+ * @returns {void}
+ */
 function addToFort(emoji, type) {
     gameState.fortItems.push({ emoji, type });
     renderFort();
@@ -209,6 +315,12 @@ function renderFort() {
 }
 
 // Remove by array index, then restore the hint if the fort is now empty.
+/**
+ * Called from the inline onclick that renderFort writes on each item.
+ * @param {number} index - position in gameState.fortItems of the clicked item. Indexes
+ *   are re-issued by every renderFort, so they are never stale at click time.
+ * @returns {void}
+ */
 function removeFortItem(index) {
     gameState.fortItems.splice(index, 1);
     renderFort();
@@ -219,6 +331,12 @@ function removeFortItem(index) {
 
 // ==================== TOYS ====================
 // Draw all toys; a card is marked selected when its emoji is in selectedToys.
+/**
+ * Redraws the 40-toy grid and the basket below it.
+ * Identity is by emoji (see allToys), so a toy is "selected" when its emoji already
+ * appears in gameState.selectedToys. Each card's onclick passes the index into allToys.
+ * @returns {void}
+ */
 function renderToyGrid() {
     const grid = document.getElementById('toy-grid');
     grid.innerHTML = allToys.map((toy, i) => {
@@ -232,6 +350,11 @@ function renderToyGrid() {
 }
 
 // Add the toy if absent, remove it if already selected, then redraw.
+/**
+ * Select or deselect one toy.
+ * @param {number} index - position in allToys, 0 to allToys.length - 1.
+ * @returns {void}
+ */
 function toggleToy(index) {
     const toy = allToys[index];
     const existing = gameState.selectedToys.findIndex(t => t.emoji === toy.emoji);
@@ -244,6 +367,11 @@ function toggleToy(index) {
 }
 
 // Show the chosen toys and their count under the grid.
+/**
+ * Updates the #toy-count number and the basket of chosen emoji under the toy grid.
+ * Called only from renderToyGrid, so the two always stay in step.
+ * @returns {void}
+ */
 function renderToyBasket() {
     const basket = document.getElementById('toy-basket');
     const count = document.getElementById('toy-count');
@@ -255,6 +383,12 @@ function renderToyBasket() {
 
 // ==================== CHARACTER CREATOR ====================
 // One row of buttons per slot, with the current choice highlighted.
+/**
+ * Redraws every avatar option row (#hair-options, #face-options, #outfit-options,
+ * #shoes-options) and the live preview. Iterates charOptions keys, so adding a slot there
+ * needs a matching '<slot>-options' container in index.html.
+ * @returns {void}
+ */
 function renderCharacterOptions() {
     Object.keys(charOptions).forEach(category => {
         const row = document.getElementById(category + '-options');
@@ -267,11 +401,23 @@ function renderCharacterOptions() {
     updateCharacterPreview();
 }
 
+/**
+ * Option-button handler: stores a choice and redraws so the highlight moves.
+ * @param {'hair'|'face'|'outfit'|'shoes'} category - key of gameState.character.
+ * @param {string} value - the emoji picked; it is also written into the button's inline
+ *   onclick, which works because emoji contain no quote characters.
+ * @returns {void}
+ */
 function selectOption(category, value) {
     gameState.character[category] = value;
     renderCharacterOptions();
 }
 
+/**
+ * Copies the current choices into the four stacked preview spans (#char-hair, #char-face,
+ * #char-outfit, #char-shoes) on the character screen.
+ * @returns {void}
+ */
 function updateCharacterPreview() {
     document.getElementById('char-hair').textContent = gameState.character.hair;
     document.getElementById('char-face').textContent = gameState.character.face;
@@ -283,11 +429,21 @@ function updateCharacterPreview() {
 // Build the play screen from state: roof text from fort items, a background
 // tint taken from the first blanket placed, the avatar (hair/face/outfit
 // stacked), and clickable toys with staggered animation delays.
+/**
+ * (Re)builds the whole play scene from gameState. Called when entering play and when
+ * returning from the tablet, because the tablet screens replace the visible DOM.
+ *
+ * Side effects: sets innerHTML of #fort-roof, #player-character and #placed-toys and, if a
+ * blanket was placed, the background of #fort-scene. It does not reset charX/charY, so the
+ * avatar stays where the player left it.
+ * @returns {void}
+ */
 function renderPlayScene() {
     const fortRoof = document.getElementById('fort-roof');
     fortRoof.innerHTML = gameState.fortItems.map(i => i.emoji).join(' ') || '~ Your Fort ~';
 
-    // Set fort background colors based on blankets used
+    // Only the FIRST blanket placed tints the room (the scene has a single background);
+    // with no blanket the stylesheet's default background stays.
     const scene = document.getElementById('fort-scene');
     // Item type (data-type of a blanket material) -> dark background colour.
     const blanketColors = {
@@ -303,7 +459,8 @@ function renderPlayScene() {
         scene.style.background = `linear-gradient(180deg, ${blanketColors[blanket.type]} 0%, #4a2d6e 100%)`;
     }
 
-    // Render character
+    // Stack hair, face and outfit vertically; the em sizes shrink hair/outfit so the face
+    // stays the focal point. Emoji come from charOptions, so this innerHTML is trusted.
     const player = document.getElementById('player-character');
     player.innerHTML = `
         <div style="font-size:0.5em">${gameState.character.hair}</div>
@@ -311,7 +468,8 @@ function renderPlayScene() {
         <div style="font-size:0.7em">${gameState.character.outfit}</div>
     `;
 
-    // Render toys
+    // One clickable emoji per chosen toy. The 0.3s per-index animation delay staggers the
+    // CSS bobbing animation so toys do not move in lockstep.
     const toyArea = document.getElementById('placed-toys');
     toyArea.innerHTML = gameState.selectedToys.map((t, i) =>
         `<span class="placed-toy" style="animation-delay: ${i * 0.3}s"
@@ -319,25 +477,39 @@ function renderPlayScene() {
     ).join('');
 }
 
-// Game Simulation Physics: 2D bounded position updates
+/**
+ * Moves the avatar one step. Positions are percentages of #fort-scene so the movement
+ * scales with screen size. Called by the on-screen arrow buttons and the keyboard handler.
+ *
+ * @param {'left'|'right'|'up'|'down'} direction - any other string is ignored.
+ * @returns {void} Mutates gameState.charX/charY and the avatar's inline left/top.
+ */
 function moveCharacter(direction) {
-    // Step 1: Discrete position displacement quantum (8% viewport step)
+    // 8% of the scene per press: about 12 presses cross the room, big enough to feel quick
+    // for a child, small enough to look like walking rather than teleporting.
     const step = 8;
-    // Step 2: Directional vector calculation with bounding box clamping
-    // Restricts avatar to interior fort margins [10%, 90%] on X-axis, [15%, 85%] on Y-axis
+    // Clamp to the interior of the fort: X in [10%, 90%], Y in [15%, 85%]. The Y margins are
+    // larger at the top because the roof sits there. Math.max/min stop the avatar at a wall.
     switch(direction) {
         case 'left': gameState.charX = Math.max(10, gameState.charX - step); break;
         case 'right': gameState.charX = Math.min(90, gameState.charX + step); break;
         case 'up': gameState.charY = Math.max(15, gameState.charY - step); break;
         case 'down': gameState.charY = Math.min(85, gameState.charY + step); break;
     }
-    // Step 3: Apply physical coordinates to CSS layout positioning
+    // The avatar is absolutely positioned; CSS translate(-50%, -50%) centres it on this point.
     const player = document.getElementById('player-character');
     player.style.left = gameState.charX + '%';
     player.style.top = gameState.charY + '%';
 }
 
-// Avatar Kinematics and Action Animations
+/**
+ * Plays one avatar action: shows an emoji popup and, for dance and jump, animates the
+ * avatar with inline CSS transforms.
+ *
+ * @param {'wave'|'dance'|'jump'|'sleep'} action - unknown values show a generic sparkle.
+ *   wave and sleep are popup-only.
+ * @returns {void}
+ */
 function doAction(action) {
     const emojis = {
         wave: '👋',
@@ -347,7 +519,9 @@ function doAction(action) {
     };
     showPopup(emojis[action] || '✨');
 
-    // Kinematic oscillation simulation (alternating rotation & scale)
+    // Dance: toggle between +10 and -10 degrees every 200ms for 7 ticks (~1.4s), then
+    // reset. Every transform repeats translate(-50%, -50%) because setting `transform`
+    // replaces the centring translate; omitting it would make the avatar jump off position.
     if (action === 'dance') {
         const player = document.getElementById('player-character');
         player.style.transition = 'transform 0.2s';
@@ -364,7 +538,8 @@ function doAction(action) {
         }, 200);
     }
 
-    // Vertical impulse simulation: parabolic leap displacement with return
+    // Jump: lift 40px, then drop back after 400ms. The CSS transition (0.3s ease) supplies
+    // the smooth up/down motion, so no per-frame code is needed.
     if (action === 'jump') {
         const player = document.getElementById('player-character');
         player.style.transition = 'transform 0.3s ease';
@@ -375,6 +550,12 @@ function doAction(action) {
     }
 }
 
+/**
+ * Click handler for a toy in the play scene: shows "<emoji> <name>!" in the popup.
+ * @param {string} name - toy display name.
+ * @param {string} emoji - toy glyph.
+ * @returns {void}
+ */
 function interactToy(name, emoji) {
     showPopup(emoji + ' ' + name + '!');
 }
@@ -382,11 +563,18 @@ function interactToy(name, emoji) {
 // Show a short floating message. Removing and re-adding the animation (with a
 // forced reflow in between) restarts the CSS animation even if a popup is
 // still visible from a previous call.
+/**
+ * @param {string} text - message for #action-popup; shown for 1 second (matches the
+ *   `popUp` keyframe duration in style.css and the hide timeout below).
+ * @returns {void}
+ */
 function showPopup(text) {
     const popup = document.getElementById('action-popup');
     popup.textContent = text;
     popup.classList.remove('hidden');
     popup.style.animation = 'none';
+    // Reading offsetHeight forces layout; without it the browser batches the two animation
+    // writes into one and the animation would not restart.
     popup.offsetHeight; // trigger reflow
     popup.style.animation = 'popUp 1s ease forwards';
     setTimeout(() => popup.classList.add('hidden'), 1000);
@@ -395,6 +583,9 @@ function showPopup(text) {
 // ==================== KEYBOARD CONTROLS ====================
 // Keyboard controls apply only while the play screen is showing: arrow keys or
 // WASD move the avatar, Space makes it jump.
+// A single global listener (installed at load) rather than one per screen. The early
+// return avoids moving the avatar, or jumping on Space, while typing a name on the
+// character screen.
 document.addEventListener('keydown', (e) => {
     if (!document.getElementById('play-screen').classList.contains('active')) return;
     switch(e.key) {
@@ -409,21 +600,41 @@ document.addEventListener('keydown', (e) => {
 // ==================== TABLET ====================
 // Tablet is a mini app launcher inside the play screen: each app is one of the
 // educational games below, rendered into #game-area.
+/**
+ * "Tablet" button in the play screen: opens the app launcher.
+ * @returns {void}
+ */
 function openTablet() {
     showScreen('tablet-screen');
 }
 
+/**
+ * Leaves the tablet and rebuilds the play scene (see renderPlayScene for why).
+ * @returns {void}
+ */
 function closeTablet() {
     showScreen('play-screen');
     renderPlayScene();
 }
 
+/**
+ * "Back" inside a mini-game: hides the game and shows the app grid again. The old game's
+ * window.* handlers are left in place; the next game simply overwrites them.
+ * @returns {void}
+ */
 function backToApps() {
     document.getElementById('tablet-game').classList.add('hidden');
     document.getElementById('app-grid').style.display = 'grid';
 }
 
 // Dispatch to the game starter named by the app button's data.
+/**
+ * App-icon handler: swaps the launcher for #tablet-game and starts the chosen game.
+ * @param {string} gameType - one of the data-game keys in index.html: math, spelling,
+ *   colors, counting, shapes, animals, music, drawing. Unknown keys leave an empty game
+ *   panel.
+ * @returns {void}
+ */
 function playTabletGame(gameType) {
     document.getElementById('app-grid').style.display = 'none';
     const gameDiv = document.getElementById('tablet-game');
@@ -449,6 +660,18 @@ function playTabletGame(gameType) {
 // answer increments the score and shows the next question after a short delay.
 // Math: single-digit +/- questions with the right answer and two nearby wrong
 // ones, shuffled.
+/**
+ * Math mini-game: endless single-digit addition/subtraction with three answers.
+ *
+ * Wrong answers are the right answer offset by 1-3 up and 1-3 down, so they are plausible
+ * but never equal the answer. The sort(() => random - 0.5) shuffle is biased but fine for
+ * three buttons. Subtraction may give a negative answer (for example 2 - 9); that is
+ * accepted as a stretch problem. Rare collisions between the two wrong values and the
+ * answer cannot occur because one is above and one below.
+ *
+ * @param {HTMLElement} area - #game-area; its innerHTML is replaced on every question.
+ * @returns {void}
+ */
 function startMathGame(area) {
     let score = 0;
     function newQuestion() {
@@ -470,6 +693,9 @@ function startMathGame(area) {
             </div>
         `;
     }
+    // Answer handler called by the buttons' inline onclick. A wrong tap only flashes red
+    // for 500ms so the child can try again; a right tap scores and moves on after 800ms
+    // (long enough to see the green flash).
     window.checkMathAnswer = function(btn, chosen, correct) {
         if (chosen === correct) {
             btn.classList.add('correct');
@@ -487,6 +713,12 @@ function startMathGame(area) {
 // Spelling: letters of a word are shuffled; the child taps them in order to
 // spell it. After the last letter the answer is coloured and a new word loads
 // either way (a wrong spelling gets no score).
+/**
+ * Spelling mini-game: unscramble a 3-4 letter word by tapping letters in order.
+ *
+ * @param {HTMLElement} area - #game-area, rewritten for each word.
+ * @returns {void}
+ */
 function startSpellingGame(area) {
     const words = [
         { word: 'CAT', hint: '🐱 A furry pet' },
@@ -501,6 +733,7 @@ function startSpellingGame(area) {
         { word: 'FROG', hint: '🐸 Hops around' },
     ];
     let score = 0;
+    // Letters the child has tapped so far for the current word (reset by newWord).
     let current = [];
 
     function newWord() {
@@ -518,6 +751,10 @@ function startSpellingGame(area) {
         `;
     }
 
+    // Each letter button hides itself when tapped (visibility keeps the layout from
+    // shifting) and the typed letters are shown spaced. When the count matches the word
+    // length the attempt is judged: blue for correct (and +1), red for wrong; either way
+    // a new word loads after 1s.
     window.pickLetter = function(letter, index, correctWord) {
         current.push(letter);
         document.getElementById('sl-' + index).style.visibility = 'hidden';
@@ -539,6 +776,11 @@ function startSpellingGame(area) {
 
 // --- Colors Game ---
 // Colors: show a swatch and three named choices (one correct).
+/**
+ * Colors mini-game: name the colour of a circle from three choices.
+ * @param {HTMLElement} area - #game-area, rewritten each round.
+ * @returns {void}
+ */
 function startColorsGame(area) {
     const colors = [
         { name: 'Red', hex: '#ff4444', emoji: '🔴' },
@@ -552,6 +794,8 @@ function startColorsGame(area) {
     ];
     let score = 0;
 
+    // Pick the answer, then two distinct distractors (filter removes the answer first, so
+    // a choice can never repeat), then shuffle all three.
     function newRound() {
         const correct = colors[Math.floor(Math.random() * colors.length)];
         const others = colors.filter(c => c.name !== correct.name).sort(() => Math.random() - 0.5).slice(0, 2);
@@ -569,6 +813,7 @@ function startColorsGame(area) {
         `;
     }
 
+    // Same correct/wrong feedback pattern as the Math game.
     window.checkColor = function(btn, chosen, correct) {
         if (chosen === correct) {
             btn.classList.add('correct');
@@ -585,14 +830,23 @@ function startColorsGame(area) {
 // --- Counting Game ---
 // Counting: show 2-9 repeated emoji; Set() removes duplicate choices when a
 // wrong option collides with the right count.
+/**
+ * Counting mini-game: count 2-9 identical emoji and pick the number.
+ * @param {HTMLElement} area - #game-area, rewritten each round.
+ * @returns {void}
+ */
 function startCountingGame(area) {
     const items = ['🍎', '🌟', '🐟', '🦋', '🎈', '🍪', '🌸', '🐝'];
     let score = 0;
 
     function newRound() {
         const emoji = items[Math.floor(Math.random() * items.length)];
+        // 2..9 inclusive: one item is too trivial and ten no longer fits on one line.
         const count = Math.floor(Math.random() * 8) + 2;
         const display = Array(count).fill(emoji).join(' ');
+        // Distractors are 1-2 above and 1-2 below (floored at 1), so they are close to the
+        // true count. Set() drops duplicates when the floor makes wrong2 repeat, which is why
+        // some rounds offer only two buttons.
         const wrong1 = count + Math.floor(Math.random() * 2) + 1;
         const wrong2 = Math.max(1, count - Math.floor(Math.random() * 2) - 1);
         const choices = [...new Set([count, wrong1, wrong2])].sort(() => Math.random() - 0.5);
@@ -607,6 +861,7 @@ function startCountingGame(area) {
         `;
     }
 
+    // Same feedback pattern as the Math game.
     window.checkCount = function(btn, chosen, correct) {
         if (chosen === correct) {
             btn.classList.add('correct');
@@ -622,7 +877,14 @@ function startCountingGame(area) {
 
 // --- Shapes Game ---
 // Shapes: shapes with an empty `css` field are drawn as emoji instead of CSS.
+/**
+ * Shapes mini-game: identify a shape drawn with CSS (or an emoji) from three names.
+ * @param {HTMLElement} area - #game-area, rewritten each round.
+ * @returns {void}
+ */
 function startShapesGame(area) {
+    // Table columns: name = answer text, symbol = emoji used when css is empty, css = inline
+    // style that draws the shape (the triangle uses the zero-size border trick).
     const shapes = [
         { name: 'Circle', symbol: '⬤', css: 'width:60px;height:60px;border-radius:50%;background:#4facfe' },
         { name: 'Square', symbol: '⬛', css: 'width:60px;height:60px;background:#ff6b9d' },
@@ -655,6 +917,7 @@ function startShapesGame(area) {
         `;
     }
 
+    // Same feedback pattern as the Math game.
     window.checkShape = function(btn, chosen, correct) {
         if (chosen === correct) {
             btn.classList.add('correct');
@@ -670,7 +933,13 @@ function startShapesGame(area) {
 
 // --- Animals Game ---
 // Animals: randomly asks either "who makes this sound" or "what animal is this".
+/**
+ * Animals mini-game: match an animal to its sound or to its picture.
+ * @param {HTMLElement} area - #game-area, rewritten each round.
+ * @returns {void}
+ */
 function startAnimalsGame(area) {
+    // Table columns: emoji = picture, name = answer text, sound = what it says in the question.
     const animals = [
         { emoji: '🐶', name: 'Dog', sound: 'Woof!' },
         { emoji: '🐱', name: 'Cat', sound: 'Meow!' },
@@ -706,6 +975,7 @@ function startAnimalsGame(area) {
         `;
     }
 
+    // Same feedback pattern as the Math game.
     window.checkAnimal = function(btn, chosen, correct) {
         if (chosen === correct) {
             btn.classList.add('correct');
@@ -723,7 +993,14 @@ function startAnimalsGame(area) {
 // Music: eight keys mapped to note frequencies (C4 to C5 in Hz, equal
 // temperament). Each tap plays a half-second sine tone with a fast fade-out
 // so keys do not click.
+/**
+ * Music mini-game: eight coloured keys play the C major scale (C4 to C5) as sine tones.
+ * @param {HTMLElement} area - #game-area, filled once (the layout never changes).
+ * @returns {void}
+ */
 function startMusicGame(area) {
+    // Table columns: note = key label ('C2' is the high C an octave up), color = key colour,
+    // freq = frequency in Hz in equal temperament with A4 = 440.
     const notes = [
         { note: 'C', color: '#ff4444', freq: 261.63 },
         { note: 'D', color: '#ff8800', freq: 293.66 },
@@ -755,11 +1032,15 @@ function startMusicGame(area) {
         gain.connect(audioCtx.destination);
         osc.frequency.value = freq;
         osc.type = 'sine';
+        // Start at 0.3 volume (quiet enough not to startle) and decay exponentially to
+        // near-silence over 0.5s. exponentialRamp cannot target exactly 0, hence 0.001. The
+        // fade removes the click an abrupt stop would cause.
         gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
         osc.start();
         osc.stop(audioCtx.currentTime + 0.5);
 
+        // Brief pressed-key look; reset after 200ms.
         btn.style.transform = 'scale(0.95)';
         btn.style.filter = 'brightness(1.3)';
         setTimeout(() => {
@@ -769,9 +1050,17 @@ function startMusicGame(area) {
     };
 }
 
-// --- Drawing Game: HTML5 2D Canvas Rasterization and Vector Rendering ---
+// --- Drawing Game ---
+/**
+ * Drawing mini-game: freehand canvas with a nine-colour palette and a Clear button.
+ * Works with mouse and touch. The canvas is 350x250 bitmap pixels; CSS may scale it, which
+ * getPos compensates for.
+ *
+ * @param {HTMLElement} area - #game-area, filled once.
+ * @returns {void}
+ */
 function startDrawingGame(area) {
-    // Step 1: Color palette selection for brush rasterization
+    // Palette; white doubles as an eraser. #000000 is the starting brush.
     const colors = ['#000000', '#ff4444', '#ff8800', '#ffcc00', '#44aa44', '#4444ff', '#aa44ff', '#ff44aa', '#ffffff'];
     let currentColor = '#000000';
 
@@ -786,23 +1075,27 @@ function startDrawingGame(area) {
         <button class="game-choice" onclick="clearCanvas()" style="margin-top:10px">🗑️ Clear</button>
     `;
 
-    // Step 2: Initialize HTML5 Canvas 2D Rendering Context
+    // Grab the canvas that the template above just created and paint it opaque white (a
+    // fresh canvas is transparent and would show the tablet colour through).
     const canvas = document.getElementById('draw-canvas');
     const ctx = canvas.getContext('2d');
-    // Clear canvas background to opaque white fill
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // Configure stroke rasterizer properties: line width, round cap joints, and color
+    // 4px round-capped strokes look like a marker and join without gaps.
     ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.strokeStyle = currentColor;
 
+    // True between pointer-down and pointer-up; gates the move handlers.
     let drawing = false;
 
-    // Step 3: Spatial coordinate transformation pipeline
-    // Transforms viewport client space coordinates to internal canvas resolution coordinates
-    // Scale pointer coordinates from CSS pixels to canvas pixels; handles both
-    // mouse events and the first touch point.
+    /**
+     * Converts a pointer position to canvas bitmap coordinates. The canvas may be shown at a
+     * different CSS size than its 350x250 bitmap, so the offset inside its bounding box is
+     * scaled by bitmap size / displayed size. Handles mouse events and the first touch point.
+     * @param {MouseEvent|TouchEvent} e
+     * @returns {{x: number, y: number}} canvas pixels.
+     */
     function getPos(e) {
         const rect = canvas.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -813,7 +1106,9 @@ function startDrawingGame(area) {
         };
     }
 
-    // Step 4: Mouse & Touch Vector Path Event Listeners
+    // Pointer handlers: down starts a new path, move extends it with a line segment, up or
+    // leave ends it (mouseleave prevents a stuck stroke if the button is released outside).
+    // The touch versions call preventDefault so drawing does not scroll the page.
     canvas.addEventListener('mousedown', (e) => {
         drawing = true;
         const p = getPos(e);
@@ -845,7 +1140,8 @@ function startDrawingGame(area) {
     });
     canvas.addEventListener('touchend', () => drawing = false);
 
-    // Step 5: Palette Selection and Canvas Reset Procedures
+    // Called by the palette dots' inline onclick: changes the brush colour and moves the
+    // `active` ring to the clicked dot.
     window.setDrawColor = function(color, dot) {
         currentColor = color;
         ctx.strokeStyle = color;
@@ -853,6 +1149,8 @@ function startDrawingGame(area) {
         dot.classList.add('active');
     };
 
+    // Clear button: repaint white. strokeStyle is reassigned because assigning fillStyle
+    // does not change it, but keeps the brush colour explicit after the reset.
     window.clearCanvas = function() {
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -862,6 +1160,9 @@ function startDrawingGame(area) {
 
 // ==================== INIT ====================
 // All other behaviour is triggered by inline onclick handlers in index.html.
+// setupDragAndDrop looks up elements by class/id, so it must wait until the DOM exists.
+// index.html loads this script at the end of <body>, so the elements are already parsed;
+// the event is kept as a safeguard if the tag is ever moved into <head>.
 document.addEventListener('DOMContentLoaded', () => {
     setupDragAndDrop();
 });
